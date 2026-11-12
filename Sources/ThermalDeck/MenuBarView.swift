@@ -25,18 +25,17 @@ struct MenuBarView: View {
             .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
         }
 
-        VStack(alignment: .leading, spacing: 0) {
-            valueRow("First value", selection: Binding(
+        HStack(alignment: .top, spacing: 16) {
+            valuePicker("First value", selection: Binding(
                 get: { model.preferences.menuBar.first },
                 set: { model.preferences.menuBar.selectFirst($0) }
             ), excluding: selection.second)
-            Divider()
-            valueRow("Second value", selection: Binding(
+            valuePicker("Second value", selection: Binding(
                 get: { model.preferences.menuBar.second },
                 set: { model.preferences.menuBar.selectSecond($0) }
             ), excluding: selection.first, enabled: selection.first != nil)
         }
-        .padding(.horizontal, 16)
+        .padding(16)
         .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
         .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary) }
     }
@@ -47,19 +46,13 @@ struct MenuBarView: View {
             + model.snapshot.fans.map { .fan($0.id) }
     }
 
-    private func valueRow(
+    private func valuePicker(
         _ title: String, selection: Binding<MenuBarReadout?>, excluding other: MenuBarReadout?, enabled: Bool = true
     ) -> some View {
         let available = options
-        return HStack(alignment: .firstTextBaseline, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).fontWeight(.medium)
-                if !enabled {
-                    Text("Choose a first value to enable this slot.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            Spacer(minLength: 8)
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(title).fontWeight(.medium)
+                .accessibilityHidden(true)
             Picker(title, selection: selection) {
                 Text("None").tag(nil as MenuBarReadout?)
                 if let saved = selection.wrappedValue, !available.contains(saved) {
@@ -70,9 +63,13 @@ struct MenuBarView: View {
                 }
             }
             .labelsHidden()
-            .frame(maxWidth: 255)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .disabled(!enabled)
+            if !enabled {
+                Text("Choose a first value to enable this slot.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
-        .padding(.vertical, 13)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
