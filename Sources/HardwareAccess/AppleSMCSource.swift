@@ -53,6 +53,7 @@ public actor AppleSMCSource: TelemetrySource {
         #if !arch(arm64)
         return Snapshot(machine: machine, health: .unavailable("Live telemetry requires native Apple Silicon."), timestamp: date)
         #else
+        let battery = BatteryReader.read()
         if connection == nil, started >= nextDiscovery {
             do {
                 connection = try SMCConnection()
@@ -62,7 +63,8 @@ public actor AppleSMCSource: TelemetrySource {
             }
         }
         guard let connection else {
-            return Snapshot(machine: machine, health: .unavailable("The read-only AppleSMC connection could not be opened."),
+            return Snapshot(machine: machine, battery: battery,
+                            health: .unavailable("The read-only AppleSMC connection could not be opened."),
                             timestamp: date)
         }
 
@@ -97,7 +99,7 @@ public actor AppleSMCSource: TelemetrySource {
             health = .live
         }
         return Snapshot(machine: machine, temperatures: temperatures, fans: fans, fanCount: fanCount,
-                        health: health, timestamp: date)
+                        battery: battery, health: health, timestamp: date)
         #endif
     }
 

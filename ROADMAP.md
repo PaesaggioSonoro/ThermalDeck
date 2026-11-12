@@ -9,4 +9,4 @@
 
 See TASKS.md and STATUS.md for current progress.
 
-The local monitoring path is implemented. Release gates are listed in [distribution](docs/releases/distribution.md). Hardware control remains conditional on the [control feasibility requirements](docs/safety/fan-control.md). Additional power data, optional update checks, and opt-in diagnostics are deferred.
+The local monitoring path includes battery charge and power flow where supported. Release gates are listed in [distribution](docs/releases/distribution.md). Hardware control remains conditional on the [control feasibility requirements](docs/safety/fan-control.md). Update checks depend on an established release endpoint.

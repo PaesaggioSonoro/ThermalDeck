@@ -127,23 +127,44 @@ public enum MonitorHealth: Equatable, Sendable {
     }
 }
 
+public struct BatteryTelemetry: Sendable {
+    public enum Source: String, Sendable {
+        case adapter = "Power adapter"
+        case battery = "Battery"
+    }
+
+    public let source: Source?
+    public let isCharging: Bool?
+    public let chargePercent: Double?
+    public let flowWatts: Double?
+
+    public init(source: Source?, isCharging: Bool?, chargePercent: Double?, flowWatts: Double?) {
+        self.source = source
+        self.isCharging = isCharging
+        self.chargePercent = chargePercent
+        self.flowWatts = flowWatts
+    }
+}
+
 public struct Snapshot: Sendable {
     public let machine: Machine
     public let temperatures: [Temperature]
     public let fans: [Fan]
     public let fanCount: Int?
+    public let battery: BatteryTelemetry?
     public let health: MonitorHealth
     public let timestamp: Date
     public let simulated: Bool
 
     public init(
         machine: Machine, temperatures: [Temperature] = [], fans: [Fan] = [], fanCount: Int? = nil,
-        health: MonitorHealth, timestamp: Date = .now, simulated: Bool = false
+        battery: BatteryTelemetry? = nil, health: MonitorHealth, timestamp: Date = .now, simulated: Bool = false
     ) {
         self.machine = machine
         self.temperatures = temperatures
         self.fans = fans
         self.fanCount = fanCount
+        self.battery = battery
         self.health = health
         self.timestamp = timestamp
         self.simulated = simulated

@@ -2,6 +2,8 @@
 
 Overview shows the hottest available mapped CPU and GPU zones and measured fan speeds. Sensors shows raw firmware IDs and health. A dash means the value is unavailable. Fans shows measured RPM, firmware-reported target, limits, and mode. Zero RPM means the fan is stopped when the reading is live.
 
+On supported Macs, Overview also shows the internal battery's charge level, power source, charging state, and estimated battery power flow. The watts shown describe flow into or out of the battery. The Mac can draw power from its adapter while battery flow reads 0 W. Battery power readings appear live and are omitted from history and exports.
+
 History records mapped peaks and measured fan speeds. Enable Battery or Targets in History to show those series. Change the time range and retention in Settings. Missing samples create chart gaps. History is in memory by default. Opt in to save a bounded five-second aggregate across launches. Use Clear History to remove current and saved data. Disabling saved history also removes the local archive. Collection can remain on independently. The archive is periodically checkpointed, so the most recent samples can be lost on exit.
 
 Choose Celsius or Fahrenheit and a menu bar readout in Settings. Local alerts require opt-in and macOS notification permission. A high-temperature notification threshold is a personal setting. Alert policy uses the available mapped CPU/GPU peak, a cooldown and hysteresis.

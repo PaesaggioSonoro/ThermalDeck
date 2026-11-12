@@ -1,10 +1,10 @@
 # ThermalDeck
 
-ThermalDeck is a native, offline macOS utility for monitoring temperatures and fans. The local development build includes a live dashboard, menu bar companion, sensor and fan details, bounded charts, optional local history and alerts, CSV and JSON export, and an offline fan-curve editor. The name and bundle identifier are provisional.
+ThermalDeck is a native, offline macOS utility for monitoring temperatures, fans, and battery power. The local development build includes a live dashboard, menu bar companion, sensor and fan details, bounded charts, optional local history and alerts, CSV and JSON export, and an offline fan-curve editor. The name and bundle identifier are provisional.
 
 ## Hardware and system requirements
 
-The minimum deployment target is macOS 15 on Apple Silicon. Physical testing was performed on a MacBook Pro with Apple M4 Pro (Mac16,7), running macOS 26.6.2 (25G83). The app read two CPU zones, eight GPU zones, two battery readings, and two fans. Both fans were stopped during verification and reported 0 RPM. Temperature coverage is partial and the readings describe zones. Other Apple Silicon models and OS releases need validation. Intel telemetry is outside the current scope. [Hardware compatibility](docs/hardware/compatibility.md)
+The minimum deployment target is macOS 15 on Apple Silicon. Physical testing was performed on a MacBook Pro with Apple M4 Pro (Mac16,7), running macOS 26.6.2 (25G83). The app read two CPU zones, eight GPU zones, two battery temperature sensors, and both fans in stopped and spinning states. Temperature coverage is partial and the readings describe zones. Other Apple Silicon models and OS releases need validation. Intel telemetry is outside the current scope. [Hardware compatibility](docs/hardware/compatibility.md)
 
 ## Build and launch
 

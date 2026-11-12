@@ -104,6 +104,22 @@ struct Dashboard: View {
                              points: model.history.plot([.cpu, .gpu], from: start, through: end),
                              range: start...end, temperatureUnit: model.preferences.unit)
             }
+            if let battery = model.snapshot.battery {
+                GroupBox("Battery") {
+                    LabeledContent("Power source", value: battery.source?.rawValue ?? "Unavailable")
+                    if let percent = battery.chargePercent {
+                        LabeledContent("Charge", value: (percent / 100).formatted(.percent.precision(.fractionLength(0))))
+                    }
+                    if let charging = battery.isCharging {
+                        LabeledContent("Charging", value: charging ? "Yes" : "No")
+                    }
+                    if let watts = battery.flowWatts {
+                        LabeledContent("Battery power flow",
+                                       value: watts.formatted(.number.precision(.fractionLength(1)).sign(strategy: .always(includingZero: false))) + " W")
+                            .help("Positive values flow into the battery. Negative values flow out.")
+                    }
+                }
+            }
             GroupBox {
                 HStack {
                     Label("Cooling", systemImage: "checkmark.circle").foregroundStyle(.secondary)

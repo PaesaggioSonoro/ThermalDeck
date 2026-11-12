@@ -58,3 +58,9 @@ for fan in sample.fans {
     }
     print("  F\(fan.id.rawValue) · measured \(rpm(fan.speed.freshValue())) · minimum \(rpm(fan.minimum)) · maximum \(rpm(fan.maximum)) · target \(rpm(fan.target)) · \(fan.mode.rawValue)")
 }
+if let battery = sample.battery {
+    let charge = battery.chargePercent.map { String(format: "%.1f%%", $0) } ?? "Unavailable"
+    let flow = battery.flowWatts.map { String(format: "%.2f W", $0) } ?? "Unavailable"
+    let charging = battery.isCharging.map { $0 ? "Yes" : "No" } ?? "Unavailable"
+    print("Battery: \(charge) · source \(battery.source?.rawValue ?? "Unavailable") · charging \(charging) · flow \(flow)")
+}
