@@ -62,7 +62,7 @@ public struct PlotPoint: Identifiable, Sendable {
 }
 
 public struct HistoryBuffer: Sendable {
-    public static let limit = 3_600
+    public static let limit = 7_200
     public private(set) var records: [HistoryRecord] = []
 
     public init() {}

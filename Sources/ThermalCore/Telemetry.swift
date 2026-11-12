@@ -66,12 +66,14 @@ public struct Reading: Sendable {
 
 public struct Temperature: Identifiable, Sendable {
     public let id: SensorID
+    public let label: String
     public let group: SensorGroup
     public let reading: Reading
     public let format: String
 
-    public init(id: SensorID, group: SensorGroup, reading: Reading, format: String) {
+    public init(id: SensorID, label: String? = nil, group: SensorGroup, reading: Reading, format: String) {
         self.id = id
+        self.label = label ?? id.rawValue
         self.group = group
         self.reading = reading
         self.format = format
@@ -176,6 +178,10 @@ public struct Snapshot: Sendable {
             return sensor.group == .cpu || sensor.group == .gpu
         }.compactMap { $0.reading.freshValue(at: now) }.max()
     }
+
+    public func highestTemperature(at now: ContinuousClock.Instant = .now) -> Double? {
+        temperatures.lazy.filter { $0.group != .other }.compactMap { $0.reading.freshValue(at: now) }.max()
+    }
 }
 
 public protocol TelemetrySource: Sendable {
@@ -195,10 +201,10 @@ public actor DemoSource: TelemetrySource {
     public func sample(validity: Duration) -> Snapshot {
         phase += 0.32
         let date = Date()
-        let cpu = Temperature(id: SensorID(rawValue: "DEMO-CPU"), group: .cpu,
+        let cpu = Temperature(id: SensorID(rawValue: "DEMO-CPU"), label: "Demo CPU", group: .cpu,
                               reading: Reading(54 + 9 * sin(phase), within: 1...125, at: date, validity: validity),
                               format: "Demo")
-        let gpu = Temperature(id: SensorID(rawValue: "DEMO-GPU"), group: .gpu,
+        let gpu = Temperature(id: SensorID(rawValue: "DEMO-GPU"), label: "Demo GPU", group: .gpu,
                               reading: Reading(47 + 5 * cos(phase), within: 1...125, at: date, validity: validity),
                               format: "Demo")
         let fans = (0..<2).map { index in

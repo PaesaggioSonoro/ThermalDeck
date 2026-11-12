@@ -15,3 +15,4 @@
 | TD-10 | Reliability and performance | Complete, physical sleep/wake unverified |
 | TD-11 | Optional advanced features | Export, display options, battery power, and local diagnostics complete. Update checking awaits a release endpoint. |
 | TD-12 | Local release preparation | Complete, distribution gates pending |
+| TD-13 | Sensor, menu bar, polling and shared percentage controls | Implemented and checked in the QA app |

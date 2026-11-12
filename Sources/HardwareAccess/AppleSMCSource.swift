@@ -10,6 +10,7 @@ public actor AppleSMCSource: TelemetrySource {
         let id: SensorID
         let group: SensorGroup
         let format: String
+        let label: String?
     }
 
     public nonisolated let machine: Machine
@@ -24,9 +25,12 @@ public actor AppleSMCSource: TelemetrySource {
     private static let thermalFormats: Set<String> = ["flt ", "sp78"]
     private static let temperatureRange = 5.0...125.0
     // Tp keys on this model have returned ambient-inconsistent values near 2–4.
-    private static let cpuKeys: Set<String> = ["Te05", "Te0S"]
-    private static let gpuKeys: Set<String> = ["Tg1U", "Tg1k", "Tg0K", "Tg0L", "Tg0d", "Tg0e", "Tg0j", "Tg0k"]
-    private static let batteryKeys: Set<String> = ["TB1T", "TB2T"]
+    private static let cpuLabels = ["Te05": "CPU Efficiency Core 1", "Te0S": "CPU Efficiency Core 2"]
+    private static let gpuLabels = [
+        "Tg1U": "GPU Sensor 1", "Tg1k": "GPU Sensor 2", "Tg0K": "GPU Sensor 3", "Tg0L": "GPU Sensor 4",
+        "Tg0d": "GPU Sensor 5", "Tg0e": "GPU Sensor 6", "Tg0j": "GPU Sensor 7", "Tg0k": "GPU Sensor 8"
+    ]
+    private static let batteryLabels = ["TB1T": "Battery 1", "TB2T": "Battery 2"]
     private static let memoryKeys: Set<String> = ["Tm0p", "Tm1p", "Tm2p"]
 
     public init(includeUnclassified: Bool = false) {
@@ -75,7 +79,7 @@ public actor AppleSMCSource: TelemetrySource {
         }
 
         let temperatures = sensors.map { sensor in
-            Temperature(id: sensor.id, group: sensor.group,
+            Temperature(id: sensor.id, label: sensor.label, group: sensor.group,
                         reading: Reading(connection.number(sensor.key, formats: Self.thermalFormats),
                                          within: sensor.group == .other ? 1...125 : Self.temperatureRange,
                                          at: date, sampledAt: started, validity: validity),
@@ -144,7 +148,8 @@ public actor AppleSMCSource: TelemetrySource {
 
     private func discover(_ connection: SMCConnection) -> [Sensor] {
         let hasMap = machine.model == "Mac16,7" && machine.chip == "Apple M4 Pro"
-        let known = hasMap ? Self.cpuKeys.union(Self.gpuKeys).union(Self.memoryKeys).union(Self.batteryKeys) : []
+        let known = hasMap ? Set(Self.cpuLabels.keys).union(Self.gpuLabels.keys)
+            .union(Self.memoryKeys).union(Self.batteryLabels.keys) : []
         let catalog = includeUnclassified ? connection.keys() : []
         let keys = Set(catalog).union(known.compactMap(SMCCodec.fourCC))
 
@@ -152,20 +157,26 @@ public actor AppleSMCSource: TelemetrySource {
             guard let name = SMCCodec.name(key), name.hasPrefix("T"),
                   let info = connection.describe(key), Self.thermalFormats.contains(info.format) else { return nil }
             let group: SensorGroup
-            if hasMap && Self.cpuKeys.contains(name) {
+            let label: String?
+            if hasMap, let cpuLabel = Self.cpuLabels[name] {
                 group = .cpu
-            } else if hasMap && Self.gpuKeys.contains(name) {
+                label = cpuLabel
+            } else if hasMap, let gpuLabel = Self.gpuLabels[name] {
                 group = .gpu
-            } else if hasMap && Self.batteryKeys.contains(name) {
+                label = gpuLabel
+            } else if hasMap, let batteryLabel = Self.batteryLabels[name] {
                 group = .battery
+                label = batteryLabel
             } else if hasMap && Self.memoryKeys.contains(name) {
                 group = .memory
+                label = nil
             } else {
                 guard let value = connection.number(key, formats: Self.thermalFormats),
                       (1...125).contains(value) else { return nil }
                 group = .other
+                label = nil
             }
-            return Sensor(key: key, id: SensorID(rawValue: name), group: group, format: info.format)
+            return Sensor(key: key, id: SensorID(rawValue: name), group: group, format: info.format, label: label)
         }.sorted { $0.id.rawValue < $1.id.rawValue }
     }
 

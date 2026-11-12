@@ -10,3 +10,5 @@
 See TASKS.md and STATUS.md for current progress.
 
 The local monitoring path includes battery charge and power flow where supported. Release gates are listed in [distribution](docs/releases/distribution.md). Hardware control remains conditional on the [control feasibility requirements](docs/safety/fan-control.md). Update checks depend on an established release endpoint.
+
+The monitoring controls follow-up adds a dedicated Menu Bar page, sensor sorting and visibility, half-second polling in the dashboard, and shared percentage curves. Exact GPU cluster and battery names require a source that pairs the reference labels with firmware keys.

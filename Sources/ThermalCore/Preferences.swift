@@ -26,25 +26,17 @@ public enum MenuIndicator: String, CaseIterable, Codable, Sendable {
     case fan = "Fan 1 RPM"
     case temperatureAndFan = "Peak and fan 1"
     case icon = "Icon only"
-
-    public var label: String {
-        switch self {
-        case .fan: "Fan RPM"
-        case .temperatureAndFan: "Peak and fan"
-        default: rawValue
-        }
-    }
 }
 
 public struct Preferences: Codable, Equatable, Sendable {
     public static let schema = 1
-    public static let intervals = [1, 2, 5]
+    public static let intervals: [Double] = [0.5, 1, 2, 5]
     public static let retentions = [300, 900, 3600]
 
     public var version = schema
     public var unit = TemperatureUnit.celsius
     public var appearance = Appearance.system
-    public var interval = 1
+    public var interval = 1.0
     public var retention = 900
     public var collectHistory = true
     public var persistHistory = false
@@ -54,8 +46,36 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var storedCurve: FanCurve?
     public var menuFanIndex: Int?
     public var showOverviewChart: Bool?
+    private var savedSensorPresentation: SensorPresentation?
+    private var savedMenuBar: MenuBarSelection?
+    public var storedPercentCurve: PercentFanCurve?
 
     public init() {}
+
+    public var sensorPresentation: SensorPresentation {
+        get { savedSensorPresentation ?? SensorPresentation() }
+        set { savedSensorPresentation = newValue }
+    }
+
+    public var menuBar: MenuBarSelection {
+        get {
+            if let savedMenuBar { return savedMenuBar }
+            let fan = MenuBarReadout.fan(FanID(rawValue: menuFanIndex ?? 0))
+            return switch menuIndicator {
+            case .cpu: MenuBarSelection(first: .cpuHighest)
+            case .gpu: MenuBarSelection(first: .gpuHighest)
+            case .peak: MenuBarSelection(first: .cpuGPUHighest)
+            case .fan: MenuBarSelection(first: fan)
+            case .temperatureAndFan: MenuBarSelection(first: .cpuGPUHighest, second: fan)
+            case .icon: MenuBarSelection()
+            }
+        }
+        set { savedMenuBar = newValue }
+    }
+
+    public func pollingInterval(dashboardActive: Bool) -> Double {
+        dashboardActive ? interval : max(1, interval)
+    }
 
     public mutating func normalize() {
         if !Self.intervals.contains(interval) { interval = 1 }

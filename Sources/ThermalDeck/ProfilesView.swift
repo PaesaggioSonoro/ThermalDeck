@@ -48,17 +48,30 @@ private struct CurveEditor: View {
     let model: AppModel
     private struct DraftPoint: Identifiable {
         let id = UUID()
-        var value: CurvePoint
+        var value: PercentCurvePoint
     }
 
     @State private var draft: [DraftPoint]
     @State private var selectedX: Double?
     @State private var previewCelsius = 65.0
+    private let legacyNotice: String?
 
     init(model: AppModel) {
         self.model = model
-        let initial = model.preferences.storedCurve?.points ?? [
-            .init(celsius: 45, rpm: 1700), .init(celsius: 65, rpm: 3000), .init(celsius: 85, rpm: 4800)
+        let saved = model.preferences.storedPercentCurve
+        let legacy = model.preferences.storedCurve
+        let converted = legacy.flatMap {
+            PercentFanCurve(converting: $0, fanMaxima: model.snapshot.fans.map(\.maximum))
+        }
+        if saved == nil, legacy != nil {
+            legacyNotice = converted == nil ?
+                "The earlier RPM draft is preserved. Conversion requires two matching fan maximums and speeds within that range." :
+                "The earlier RPM draft was converted using the two matching fan maximums. Save to keep the percentage draft."
+        } else {
+            legacyNotice = nil
+        }
+        let initial = (saved ?? converted)?.points ?? [
+            .init(celsius: 45, percent: 30), .init(celsius: 65, percent: 50), .init(celsius: 85, percent: 85)
         ]
         _draft = State(initialValue: initial.map { DraftPoint(value: $0) })
     }
@@ -66,22 +79,27 @@ private struct CurveEditor: View {
     var body: some View {
         let unit = model.preferences.unit
         let format = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0...1))
-        let curve = try? FanCurve(points: points)
-        GroupBox("Curve preview") {
+        let curve = try? PercentFanCurve(points: points)
+        GroupBox("Shared fan curve") {
+            Text("Both fans use this percentage. 0% is stopped and 100% is each fan’s reported maximum.")
+                .font(.callout).foregroundStyle(.secondary)
+            if let legacyNotice {
+                Text(legacyNotice).font(.callout).foregroundStyle(.secondary)
+            }
             Chart {
                 if let curve {
                     ForEach(curve.points.indices, id: \.self) { index in
                         let point = curve.points[index]
-                        LineMark(x: .value("Temperature", unit.displayValue(point.celsius)), y: .value("RPM", point.rpm))
+                        LineMark(x: .value("Temperature", unit.displayValue(point.celsius)), y: .value("Fan speed (%)", point.percent))
                             .foregroundStyle(.teal)
-                        PointMark(x: .value("Temperature", unit.displayValue(point.celsius)), y: .value("RPM", point.rpm))
+                        PointMark(x: .value("Temperature", unit.displayValue(point.celsius)), y: .value("Fan speed (%)", point.percent))
                             .foregroundStyle(.teal)
                     }
-                    if let rpm = curve.target(for: previewCelsius) {
+                    if let percent = curve.target(for: previewCelsius) {
                         RuleMark(x: .value("Simulated temperature", unit.displayValue(previewCelsius)))
                             .foregroundStyle(.secondary)
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                        PointMark(x: .value("Temperature", unit.displayValue(previewCelsius)), y: .value("RPM", rpm))
+                        PointMark(x: .value("Temperature", unit.displayValue(previewCelsius)), y: .value("Fan speed (%)", percent))
                             .foregroundStyle(.orange)
                             .symbolSize(65)
                     }
@@ -89,9 +107,9 @@ private struct CurveEditor: View {
             }
             .chartXSelection(value: $selectedX)
             .chartXScale(domain: unit.displayValue(20)...unit.displayValue(115))
-            .chartYScale(domain: 0...max(6000, points.map(\.rpm).filter { (0...20_000).contains($0) }.max() ?? 0))
+            .chartYScale(domain: 0.0...100.0)
             .chartXAxisLabel(unit.symbol)
-            .chartYAxisLabel("RPM")
+            .chartYAxisLabel("%")
             .frame(height: 180)
             .onChange(of: selectedX) {
                 if let selectedX { previewCelsius = min(115, max(20, unit.celsiusValue(selectedX))) }
@@ -99,7 +117,7 @@ private struct CurveEditor: View {
             Slider(value: $previewCelsius, in: 20...115, step: 1) {
                 Text("Simulated temperature")
             }
-            LabeledContent(model.temperature(previewCelsius), value: model.rpm(curve?.target(for: previewCelsius)))
+            LabeledContent(model.temperature(previewCelsius), value: curve?.target(for: previewCelsius).map { $0.formatted(format) + "%" } ?? "—")
                 .monospacedDigit()
             Divider().padding(.vertical, 5)
             ForEach(Array(draft.enumerated()), id: \.element.id) { index, entry in
@@ -112,9 +130,9 @@ private struct CurveEditor: View {
                     TextField("Temperature for point \(index + 1)", value: displayed, format: format)
                         .labelsHidden().frame(width: 76)
                     Text(unit.symbol).frame(width: 24, alignment: .leading)
-                    TextField("RPM for point \(index + 1)", value: field(entry, \.rpm), format: format)
+                    TextField("Fan speed percent for point \(index + 1)", value: field(entry, \.percent), format: format)
                         .labelsHidden().frame(width: 84)
-                    Text("RPM")
+                    Text("%")
                     Button { draft.removeAll { $0.id == entry.id } } label: {
                         Image(systemName: "minus.circle").accessibilityLabel("Remove point \(index + 1)")
                     }
@@ -129,23 +147,23 @@ private struct CurveEditor: View {
             HStack {
                 Button("Add Point") {
                     guard let last = points.last else { return }
-                    draft.append(DraftPoint(value: .init(celsius: min(115, last.celsius + 5), rpm: last.rpm)))
+                    draft.append(DraftPoint(value: .init(celsius: min(115, last.celsius + 5), percent: last.percent)))
                 }
                 .disabled(points.count >= 12)
                 Spacer()
                 Button("Save Curve") {
-                    if let curve { model.preferences.storedCurve = curve }
+                    if let curve { model.preferences.storedPercentCurve = curve }
                 }
-                .disabled(curve == nil || curve == model.preferences.storedCurve)
+                .disabled(curve == nil || curve == model.preferences.storedPercentCurve)
                 .buttonStyle(.borderedProminent)
             }
             .padding(.top, 7)
         }
     }
 
-    private var points: [CurvePoint] { draft.map(\.value) }
+    private var points: [PercentCurvePoint] { draft.map(\.value) }
 
-    private func field(_ entry: DraftPoint, _ path: WritableKeyPath<CurvePoint, Double>) -> Binding<Double> {
+    private func field(_ entry: DraftPoint, _ path: WritableKeyPath<PercentCurvePoint, Double>) -> Binding<Double> {
         Binding(
             get: { (draft.first { $0.id == entry.id }?.value ?? entry.value)[keyPath: path] },
             set: { newValue in
@@ -158,7 +176,7 @@ private struct CurveEditor: View {
 
     private var validationMessage: String? {
         do {
-            _ = try FanCurve(points: points)
+            _ = try PercentFanCurve(points: points)
             return nil
         } catch {
             return error.localizedDescription

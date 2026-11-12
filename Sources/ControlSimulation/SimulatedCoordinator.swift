@@ -17,6 +17,11 @@ struct SimulatedCoordinator {
         var sampledAt: Duration
     }
 
+    private enum Request {
+        case rpm([FanID: Double], curve: FanCurve?)
+        case sharedCurve(PercentFanCurve)
+    }
+
     var backend: SimulatedBackend
     var authorized = true
     private let trustedSensors: Set<SensorID>
@@ -25,7 +30,7 @@ struct SimulatedCoordinator {
     private var expected: [FanID: Double] = [:]
     private var pendingUntil: Duration?
     private var leaseUntil: Duration?
-    private var activeCurve: FanCurve?
+    private var activeCurves: [FanID: FanCurve] = [:]
     private var curveResponses: [FanID: CurveResponse] = [:]
     private var lastStep: Duration = .zero
 
@@ -37,6 +42,18 @@ struct SimulatedCoordinator {
     mutating func start(
         targets: [FanID: Double], curve: FanCurve? = nil, temperatures: [SensorID: Input], at now: Duration
     ) -> Bool {
+        start(.rpm(targets, curve: curve), temperatures: temperatures, at: now)
+    }
+
+    mutating func start(
+        sharedCurve: PercentFanCurve, temperatures: [SensorID: Input], at now: Duration
+    ) -> Bool {
+        start(.sharedCurve(sharedCurve), temperatures: temperatures, at: now)
+    }
+
+    private mutating func start(
+        _ request: Request, temperatures: [SensorID: Input], at now: Duration
+    ) -> Bool {
         if case .recoveryRequired = state { return false }
         if !owned.isEmpty {
             let inFlight = pendingUntil != nil
@@ -47,27 +64,55 @@ struct SimulatedCoordinator {
         guard authorized else { state = .faulted(.unauthorized); return false }
         guard let temperature = freshPeak(temperatures, at: now) else { state = .faulted(.telemetry); return false }
         guard let fans = backend.read(at: now) else { state = .faulted(.fanRead); return false }
-        guard !targets.isEmpty, targets.allSatisfy({ id, rpm in
+        guard let (targets, curves) = resolve(request, fans: fans, temperature: temperature),
+              !targets.isEmpty, targets.allSatisfy({ id, rpm in
             guard let fan = fans[id] else { return false }
             return fan.mode == .system && allowed(rpm, for: fan) &&
-                (curve?.points.allSatisfy { allowed($0.rpm, for: fan) } ?? true)
+                (curves[id]?.points.allSatisfy { allowed($0.rpm, for: fan) } ?? true)
         }) else { state = .faulted(.unverified); return false }
 
         state = .preparing
         for id in targets.keys { owned[id] = fans[id]?.limits }
-        activeCurve = curve
+        activeCurves = curves
         lastStep = now
         var initial = targets
-        if let curve {
-            for (id, baseline) in targets {
-                var response = CurveResponse()
-                initial[id] = response.step(curve: curve, celsius: temperature, elapsed: .zero, baseline: baseline)
-                curveResponses[id] = response
-            }
+        for (id, curve) in curves {
+            guard let baseline = targets[id] else { continue }
+            var response = CurveResponse()
+            initial[id] = response.step(curve: curve, celsius: temperature, elapsed: .zero, baseline: baseline)
+            curveResponses[id] = response
         }
         guard apply(initial, at: now) else { return false }
         leaseUntil = now + .seconds(8)
         return true
+    }
+
+    private func resolve(
+        _ request: Request, fans: [FanID: SimulatedBackend.Fan], temperature: Double
+    ) -> (targets: [FanID: Double], curves: [FanID: FanCurve])? {
+        switch request {
+        case .rpm(let targets, let curve):
+            let curves = curve.map { value in
+                Dictionary(uniqueKeysWithValues: targets.keys.map { ($0, value) })
+            } ?? [:]
+            return (targets, curves)
+        case .sharedCurve(let shared):
+            guard fans.count == 2 else { return nil }
+            var targets: [FanID: Double] = [:]
+            var curves: [FanID: FanCurve] = [:]
+            for (id, fan) in fans {
+                let points = shared.points.compactMap { point in
+                    PercentFanCurve.rpm(for: point.percent, maximum: fan.limits.upperBound).map {
+                        CurvePoint(celsius: point.celsius, rpm: $0)
+                    }
+                }
+                guard points.count == shared.points.count, let curve = try? FanCurve(points: points),
+                      let target = curve.target(for: temperature) else { return nil }
+                targets[id] = target
+                curves[id] = curve
+            }
+            return (targets, curves)
+        }
     }
 
     mutating func heartbeat(at now: Duration) {
@@ -95,17 +140,18 @@ struct SimulatedCoordinator {
         if let deadline = pendingUntil {
             if now <= deadline, expected.allSatisfy({ id, rpm in fans[id].map { abs($0.actual - rpm) <= 100 } ?? false }) {
                 pendingUntil = nil
-                state = activeCurve == nil ? .manualActive : .curveActive
+                state = activeCurves.isEmpty ? .manualActive : .curveActive
             } else if now >= deadline {
                 restore(fault: .settleTimeout, at: now)
             }
             return
         }
 
-        guard let curve = activeCurve, now - lastStep >= .seconds(1) else { return }
+        guard !activeCurves.isEmpty, now - lastStep >= .seconds(1) else { return }
         var updated: [FanID: Double] = [:]
         for (id, rpm) in expected {
-            guard let target = curveResponses[id]?.step(curve: curve, celsius: peak, elapsed: now - lastStep, baseline: rpm),
+            guard let curve = activeCurves[id],
+                  let target = curveResponses[id]?.step(curve: curve, celsius: peak, elapsed: now - lastStep, baseline: rpm),
                   let fan = fans[id], allowed(target, for: fan) else {
                 restore(fault: .telemetry, at: now)
                 return
@@ -150,7 +196,7 @@ struct SimulatedCoordinator {
         expected = [:]
         pendingUntil = nil
         leaseUntil = nil
-        activeCurve = nil
+        activeCurves = [:]
         curveResponses = [:]
         if !failures.isEmpty {
             state = .recoveryRequired(failures)

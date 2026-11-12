@@ -103,7 +103,7 @@ final class AppModel {
         polling?.cancel()
         revision += 1
         let current = revision
-        let interval = visible ? preferences.interval : 5
+        let interval = preferences.pollingInterval(dashboardActive: visible)
         Self.log.info("Polling cadence: \(interval, privacy: .public) seconds")
         let validity = Duration.seconds(interval * 3)
         polling = Task { [weak self, source] in
@@ -152,6 +152,19 @@ final class AppModel {
     func rpm(_ value: Double?) -> String {
         guard let value else { return "—" }
         return value.formatted(.number.precision(.fractionLength(0))) + " RPM"
+    }
+
+    var menuBarTitle: String? {
+        let readouts = preferences.menuBar.readouts
+        guard !readouts.isEmpty else { return nil }
+        return readouts.map(menuBarValue).joined(separator: " · ")
+    }
+
+    func menuBarValue(_ readout: MenuBarReadout) -> String {
+        let value = readout.value(in: snapshot)
+        if case .fan = readout { return rpm(value) }
+        guard let value else { return "—" }
+        return preferences.unit.displayValue(value).formatted(.number.precision(.fractionLength(0))) + preferences.unit.symbol
     }
 
     private func accept(_ sample: Snapshot, expires: ContinuousClock.Instant) {

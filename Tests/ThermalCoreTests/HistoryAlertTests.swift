@@ -17,15 +17,15 @@ import Testing
 @Test func historyIsBoundedByTimeAndCountAndRejectsInvalidValues() {
     let start = Date(timeIntervalSinceReferenceDate: 20_000)
     var history = HistoryBuffer()
-    for index in 0..<4_000 {
+    for index in 0..<(HistoryBuffer.limit + 400) {
         history.append(HistoryRecord(date: start.addingTimeInterval(Double(index) / 2),
                                      values: [.cpu: .infinity, .gpu: 51]), retention: 3_600)
     }
     #expect(history.records.count == HistoryBuffer.limit)
     #expect(history.records.last?.values[.cpu] == nil)
     #expect(history.archiveRecords().count <= 721)
-    history.trim(at: start.addingTimeInterval(2200), retention: 300)
-    #expect(history.records.first?.date == start.addingTimeInterval(1900))
+    history.trim(at: start.addingTimeInterval(4_000), retention: 300)
+    #expect(history.records.first?.date == start.addingTimeInterval(3_700))
 }
 
 @Test func archiveUsesRevisionToPreventAnOlderWriteAfterClear() async throws {

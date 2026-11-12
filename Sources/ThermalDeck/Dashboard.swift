@@ -7,6 +7,7 @@ enum DashboardPage: String, CaseIterable, Identifiable {
     case fans = "Fans"
     case history = "History"
     case profiles = "Profiles"
+    case menuBar = "Menu Bar"
     case compatibility = "Compatibility"
 
     var id: Self { self }
@@ -17,6 +18,7 @@ enum DashboardPage: String, CaseIterable, Identifiable {
         case .fans: "fan"
         case .history: "chart.xyaxis.line"
         case .profiles: "slider.horizontal.3"
+        case .menuBar: "menubar.rectangle"
         case .compatibility: "desktopcomputer"
         }
     }
@@ -24,6 +26,7 @@ enum DashboardPage: String, CaseIterable, Identifiable {
 
 struct Dashboard: View {
     let model: AppModel
+    @Environment(\.openSettings) private var openSettings
     @State private var page: DashboardPage? = .overview
     @State private var compatibilityReport: CompatibilityReport?
 
@@ -36,8 +39,18 @@ struct Dashboard: View {
             .safeAreaInset(edge: .bottom) {
                 VStack(alignment: .leading, spacing: 5) {
                     Divider()
-                    Text(model.snapshot.machine.chip).font(.callout.weight(.medium))
-                    Text(model.snapshot.machine.model).font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(model.snapshot.machine.chip).font(.callout.weight(.medium))
+                            Text(model.snapshot.machine.model).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 8)
+                        Button { openSettings() } label: {
+                            Label("Settings", systemImage: "gearshape").labelStyle(.iconOnly)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Open Settings")
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
@@ -56,6 +69,7 @@ struct Dashboard: View {
                     case .fans: FanView(model: model)
                     case .history: HistoryView(model: model)
                     case .profiles: ProfilesView(model: model)
+                    case .menuBar: MenuBarView(model: model)
                     case .compatibility: compatibility
                     }
                 }

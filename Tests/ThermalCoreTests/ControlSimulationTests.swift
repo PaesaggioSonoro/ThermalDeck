@@ -151,6 +151,27 @@ private func activeControlFaultsRestoreOrExposeUnverifiedFans(_ failure: ActiveF
     }
 }
 
+@Test func sharedCurveScalesBothFansAndRejectsTargetsBelowTheCoolingFloor() throws {
+    var sim = rig()
+    let startFrame = frame(.zero, cpuValue: 60)
+    let tooLow = try PercentFanCurve(points: [.init(celsius: 40, percent: 0), .init(celsius: 80, percent: 100)])
+    let rejected = sim.start(sharedCurve: tooLow, temperatures: startFrame, at: .zero)
+    #expect(!rejected)
+    #expect(sim.backend.fans[first]?.mode == .system)
+    #expect(sim.backend.fans[second]?.mode == .system)
+
+    let shared = try PercentFanCurve(points: [.init(celsius: 40, percent: 50), .init(celsius: 80, percent: 100)])
+    let accepted = sim.start(sharedCurve: shared, temperatures: startFrame, at: .zero)
+    #expect(accepted)
+    #expect(sim.backend.fans[first]?.target == 4_500)
+    #expect(sim.backend.fans[second]?.target == 4_125)
+    sim.tick(temperatures: frame(.seconds(2), cpuValue: 60), at: .seconds(2))
+    #expect(sim.state == .curveActive)
+    sim.tick(temperatures: frame(.seconds(3), cpuValue: 80), at: .seconds(3))
+    #expect(sim.backend.fans[first]?.target == 6_000)
+    #expect(sim.backend.fans[second]?.target == 5_500)
+}
+
 @Test func fanCurveHoldsSmallDeclinesAndBoundsItsRamp() throws {
     let curve = try FanCurve(points: [.init(celsius: 40, rpm: 1500), .init(celsius: 80, rpm: 4500)])
     var response = CurveResponse()

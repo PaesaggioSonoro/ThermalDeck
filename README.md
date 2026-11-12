@@ -18,7 +18,7 @@ open dist/ThermalDeck.app
 
 Set `CONFIGURATION=release` for an optimized local build. The build script packages and ad-hoc signs the app. An Xcode project and shared scheme are included for IDE use. No installer or public release is available. [Development setup](docs/development/setup.md)
 
-Open Sensors for firmware identifiers and reading health. Open Fans for measured RPM, reported target, bounds, and mode. Use History to choose a range, show additional series, or export samples. Settings controls units, appearance, polling, menu bar indicators, retention, and local alerts. To see explicitly labeled simulated telemetry, run `open -n dist/ThermalDeck.app --args --demo`. [Monitoring guide](docs/user/monitoring.md)
+Open Sensors to sort readings, group by zone, or hide individual rows. Open Fans for measured RPM, reported target, bounds, and mode. Use History to choose a range, show additional series, or export samples. The sidebar Menu Bar page configures up to two live values. The gear beside the Mac model opens Settings for units, appearance, polling, retention, and local alerts. To see explicitly labeled simulated telemetry, run `open -n dist/ThermalDeck.app --args --demo`. [Monitoring guide](docs/user/monitoring.md)
 
 ## Cooling and safety
 

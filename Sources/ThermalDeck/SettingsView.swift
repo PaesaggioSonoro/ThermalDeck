@@ -16,28 +16,12 @@ struct SettingsView: View {
                     ForEach(Appearance.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
                 Picker("Dashboard interval", selection: $model.preferences.interval) {
-                    ForEach(Preferences.intervals, id: \.self) { Text("\($0) s").tag($0) }
+                    ForEach(Preferences.intervals, id: \.self) { Text($0.formatted() + " s").tag($0) }
                 }
                 let chart = Binding(get: { model.preferences.showOverviewChart ?? true },
                                     set: { model.preferences.showOverviewChart = $0 })
                 Toggle("Show chart on Overview", isOn: chart)
                 if !model.snapshot.simulated { LoginItemView() }
-            }
-            Section("Menu Bar") {
-                Picker("Show", selection: $model.preferences.menuIndicator) {
-                    ForEach(MenuIndicator.allCases, id: \.self) { Text($0.label).tag($0) }
-                }
-                if model.preferences.menuIndicator == .fan || model.preferences.menuIndicator == .temperatureAndFan {
-                    let selected = model.preferences.menuFanIndex ?? 0
-                    let fan = Binding(get: { model.preferences.menuFanIndex ?? 0 },
-                                      set: { model.preferences.menuFanIndex = $0 })
-                    Picker("Fan", selection: fan) {
-                        if !model.snapshot.fans.contains(where: { $0.id.rawValue == selected }) {
-                            Text("Selected fan unavailable").tag(selected)
-                        }
-                        ForEach(model.snapshot.fans) { Text($0.id.name).tag($0.id.rawValue) }
-                    }
-                }
             }
             Section("History") {
                 Toggle("Collect history", isOn: $model.preferences.collectHistory)

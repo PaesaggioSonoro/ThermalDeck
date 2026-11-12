@@ -39,10 +39,8 @@ struct ThermalDeckApp: App {
         MenuBarExtra {
             if model.snapshot.simulated { Text("Simulation") }
             Text(model.snapshot.health.label)
-            Text("CPU  " + model.temperature(model.snapshot.peak(.cpu)))
-            Text("GPU  " + model.temperature(model.snapshot.peak(.gpu)))
-            if let fan = menuFan {
-                Text(fan.id.name + "  " + model.rpm(fan.speed.freshValue()))
+            ForEach(model.preferences.menuBar.readouts, id: \.self) { readout in
+                Text(readout.label(in: model.snapshot) + "  " + model.menuBarValue(readout))
             }
             Divider()
             Label("Automatic", systemImage: "checkmark")
@@ -56,22 +54,12 @@ struct ThermalDeckApp: App {
             Button("Quit " + Self.displayName) { NSApp.terminate(nil) }
                 .keyboardShortcut("q")
         } label: {
-            let snapshot = model.snapshot
-            let fan = model.rpm(menuFan?.speed.freshValue())
-            switch model.preferences.menuIndicator {
-            case .cpu: Label(model.temperature(snapshot.peak(.cpu)), systemImage: "thermometer.medium")
-            case .gpu: Label(model.temperature(snapshot.peak(.gpu)), systemImage: "thermometer.medium")
-            case .peak: Label(model.temperature(snapshot.peak()), systemImage: "thermometer.medium")
-            case .fan: Label(fan, systemImage: "fan")
-            case .temperatureAndFan: Label(model.temperature(snapshot.peak()) + " · " + fan, systemImage: "thermometer.medium")
-            case .icon: Image(systemName: "thermometer.medium").accessibilityLabel(Self.displayName)
+            if let title = model.menuBarTitle {
+                Text(title).monospacedDigit()
+            } else {
+                Image(systemName: "thermometer.medium").accessibilityLabel(Self.displayName)
             }
         }
-    }
-
-    private var menuFan: Fan? {
-        let index = model.preferences.menuFanIndex ?? 0
-        return model.snapshot.fans.first { $0.id.rawValue == index }
     }
 
     private func showDashboard() {
