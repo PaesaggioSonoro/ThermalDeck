@@ -11,14 +11,14 @@ struct FanView: View {
         } else {
             ForEach(model.snapshot.fans) { fan in
                 GroupBox {
-                    LabeledContent("Measured speed", value: model.rpm(fan.speed.freshValue()))
+                    readout("Measured speed", model.rpm(fan.speed.freshValue()))
                     Divider()
-                    LabeledContent("Reported target", value: model.rpm(fresh(fan.target, for: fan)))
-                    LabeledContent("Reported minimum", value: model.rpm(fresh(fan.minimum, for: fan)))
-                    LabeledContent("Reported maximum", value: model.rpm(fresh(fan.maximum, for: fan)))
+                    readout("Reported target", model.rpm(fresh(fan.target, for: fan)))
+                    readout("Reported minimum", model.rpm(fresh(fan.minimum, for: fan)))
+                    readout("Reported maximum", model.rpm(fresh(fan.maximum, for: fan)))
                     Divider()
-                    LabeledContent("Reported mode", value: fan.speed.hasExpired() ? "Unavailable" : fan.mode.rawValue)
-                    LabeledContent("Measurement", value: fan.speed.health().rawValue)
+                    readout("Reported mode", fan.speed.hasExpired() ? "Unavailable" : fan.mode.rawValue)
+                    readout("Measurement", fan.speed.health().rawValue)
                 } label: {
                     Label(fan.id.name, systemImage: "fan")
                 }
@@ -26,6 +26,16 @@ struct FanView: View {
         }
         Label("ThermalDeck fan control is unavailable on this build.", systemImage: "lock")
             .font(.callout).foregroundStyle(.secondary)
+    }
+
+    private func readout(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title).foregroundStyle(.secondary)
+            Spacer()
+            Text(value).monospacedDigit()
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 
     private func fresh(_ value: Double?, for fan: Fan) -> Double? {

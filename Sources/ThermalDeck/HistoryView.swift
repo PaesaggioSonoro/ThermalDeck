@@ -79,11 +79,11 @@ struct HistoryChart: View {
                 .chartForegroundStyleScale(domain: labels, range: labels.indices.map { palette[$0 % palette.count] })
                 .chartXScale(domain: range)
                 .chartYAxisLabel(unit)
-                .chartYScale(domain: .automatic(includesZero: temperatureUnit == nil))
+                .chartYScale(domain: yRange)
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 5)) {
                         AxisGridLine()
-                        AxisValueLabel(format: .dateTime.hour().minute())
+                        AxisValueLabel(format: .dateTime.hour().minute(), anchor: .trailing)
                     }
                 }
                 .frame(height: 175)
@@ -94,4 +94,12 @@ struct HistoryChart: View {
         }
         .transaction { $0.animation = nil }
     }
+
+    private var yRange: ClosedRange<Double> {
+        let upper = points.map(\.value).max() ?? 0
+        guard let temperatureUnit else { return 0...max(1_000, (upper * 1.08).rounded(.up)) }
+        let lower = points.map(\.value).min() ?? upper
+        return temperatureUnit.displayValue(lower - 1)...temperatureUnit.displayValue(upper + 1)
+    }
+
 }

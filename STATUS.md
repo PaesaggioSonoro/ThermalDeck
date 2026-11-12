@@ -33,3 +33,7 @@ Fourteen tests passed, including 28 parameterized start and active control fault
 ## Cooling profiles
 
 Automatic is the app's only active profile. Quiet, Balanced and Performance show their unavailable state. The Custom editor validates a versioned local curve and previews interpolated targets using simulated temperatures. It cannot apply a target. The bundle builds and the 14-test suite passes. Next action is end-to-end live UI verification and packaging.
+
+## Native integration
+
+The live app rendered the Mac16,7 dashboard, both physical fan detail panels, the temperature and RPM history, Automatic profile and offline editor, and Settings in a native UI smoke test. The local build reported login registration unavailable. The original vector-derived ICNS is packaged and the Xcode project passed plist validation. Full Xcode project builds remain unverified. Next action is lifecycle, reliability and performance verification.

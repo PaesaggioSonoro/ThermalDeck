@@ -21,7 +21,6 @@ plutil -replace CFBundleDisplayName -string "$display_name" "$bundle/Contents/In
 plutil -replace CFBundleIdentifier -string "$bundle_id" "$bundle/Contents/Info.plist"
 if [[ -f App/ThermalDeck.icns ]]; then
     cp App/ThermalDeck.icns "$bundle/Contents/Resources/"
-    plutil -replace CFBundleIconFile -string ThermalDeck "$bundle/Contents/Info.plist"
 fi
 codesign --force --sign - "$bundle" >&2
 codesign --verify --strict "$bundle"

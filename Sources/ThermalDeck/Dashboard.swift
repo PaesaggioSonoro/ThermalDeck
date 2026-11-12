@@ -68,15 +68,32 @@ struct Dashboard: View {
 
     private var overview: some View {
         VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Label(model.snapshot.health.label, systemImage: healthIcon)
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(model.snapshot.health == .live ? Color.teal : .secondary)
+                Spacer()
+                if model.snapshot.health == .live || model.snapshot.health == .partial {
+                    Text("Updated " + model.snapshot.timestamp.formatted(date: .omitted, time: .standard))
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+            }
             HStack(spacing: 12) {
-                MetricTile(title: "CPU peak", value: model.temperature(model.snapshot.peak(.cpu)), icon: "cpu")
-                MetricTile(title: "GPU peak", value: model.temperature(model.snapshot.peak(.gpu)), icon: "gpu")
-                MetricTile(title: "CPU / GPU peak", value: model.temperature(model.snapshot.peak()), icon: "thermometer.medium")
+                MetricTile(title: "CPU zone peak", value: model.temperature(model.snapshot.peak(.cpu)), icon: "cpu")
+                MetricTile(title: "GPU zone peak", value: model.temperature(model.snapshot.peak(.gpu)), icon: "display")
+                MetricTile(title: "Mapped peak", value: model.temperature(model.snapshot.peak()), icon: "thermometer.medium")
             }
             if !model.snapshot.fans.isEmpty {
-                GroupBox("Fan speeds") {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 12)], spacing: 8) {
                     ForEach(model.snapshot.fans) { fan in
-                        LabeledContent(fan.id.name, value: model.rpm(fan.speed.freshValue()))
+                        HStack {
+                            Label(fan.id.name, systemImage: "fan").foregroundStyle(.secondary)
+                            Spacer()
+                            Text(model.rpm(fan.speed.freshValue())).monospacedDigit().fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 9)
+                        .background(.quaternary.opacity(0.32), in: RoundedRectangle(cornerRadius: 8))
+                        .accessibilityElement(children: .combine)
                     }
                 }
             }
@@ -88,9 +105,12 @@ struct Dashboard: View {
                              range: start...end, temperatureUnit: model.preferences.unit)
             }
             GroupBox {
-                LabeledContent("Monitoring", value: model.snapshot.health.label)
-                Divider()
-                LabeledContent("ThermalDeck profile", value: "Automatic")
+                HStack {
+                    Label("Cooling", systemImage: "checkmark.circle").foregroundStyle(.secondary)
+                    Spacer()
+                    Text("Automatic").fontWeight(.medium)
+                }
+                .accessibilityElement(children: .combine)
                 if case let .unavailable(reason) = model.snapshot.health {
                     Text(reason).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -98,6 +118,17 @@ struct Dashboard: View {
         }
     }
 
+    private var healthIcon: String {
+        switch model.snapshot.health {
+        case .live: "waveform"
+        case .partial: "exclamationmark.circle"
+        case .waiting: "ellipsis.circle"
+        case .paused: "pause.circle"
+        case .unavailable: "exclamationmark.triangle"
+        }
+    }
+
+    @ViewBuilder
     private var compatibility: some View {
         GroupBox("This Mac") {
             LabeledContent("Model", value: model.snapshot.machine.model)
@@ -106,7 +137,17 @@ struct Dashboard: View {
             Divider()
             LabeledContent("macOS", value: model.snapshot.machine.os)
             Divider()
+            LabeledContent("Mapped temperature zones", value: model.snapshot.temperatures.count.formatted())
+            LabeledContent("Fans reported", value: model.snapshot.fanCount?.formatted() ?? "Unavailable")
+            Divider()
             LabeledContent("Fan control", value: "Unavailable")
+            Text("Independent restoration after a control-process failure has not been verified.")
+                .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+        }
+        GroupBox("About") {
+            LabeledContent(ThermalDeckApp.displayName, value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development")
+            Text("Read-only monitoring uses an undocumented AppleSMC interface and can vary by device or macOS version. This software is provided as is. Manual fan control can alter cooling and may contribute to instability, damage, or data loss. Use at your own risk. ThermalDeck has no affiliation with Apple.")
+                .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

@@ -1,0 +1,134 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* ThermalCore in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000000E; };
+		A10000000000000000000002 /* HardwareAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000000F; };
+		A10000000000000000000003 /* ThermalDeck.icns in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000004 /* ThermalDeck.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = ThermalDeck.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000005 /* ThermalDeck.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = App/ThermalDeck.icns; sourceTree = "<group>"; };
+		A10000000000000000000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = App/Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A10000000000000000000007 /* ThermalDeck sources */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Sources/ThermalDeck; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A10000000000000000000008 = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (A10000000000000000000001, A10000000000000000000002);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A10000000000000000000009 = {
+			isa = PBXGroup;
+			children = (A10000000000000000000007, A10000000000000000000006, A10000000000000000000005, A1000000000000000000000A);
+			sourceTree = "<group>";
+		};
+		A1000000000000000000000A /* Products */ = {isa = PBXGroup; children = (A10000000000000000000004); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1000000000000000000000B /* ThermalDeck */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000017;
+			buildPhases = (A10000000000000000000011, A10000000000000000000008, A10000000000000000000010);
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (A10000000000000000000007);
+			name = ThermalDeck;
+			packageProductDependencies = (A1000000000000000000000E, A1000000000000000000000F);
+			productName = ThermalDeck;
+			productReference = A10000000000000000000004;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1000000000000000000000C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; };
+			buildConfigurationList = A10000000000000000000016;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = A10000000000000000000009;
+			packageReferences = (A1000000000000000000000D);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A1000000000000000000000A;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (A1000000000000000000000B);
+		};
+/* End PBXProject section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A1000000000000000000000D = {isa = XCLocalSwiftPackageReference; relativePath = .; };
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A1000000000000000000000E = {isa = XCSwiftPackageProductDependency; package = A1000000000000000000000D; productName = ThermalCore; };
+		A1000000000000000000000F = {isa = XCSwiftPackageProductDependency; package = A1000000000000000000000D; productName = HardwareAccess; };
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A10000000000000000000010 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000003); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A10000000000000000000011 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A10000000000000000000012 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {MACOSX_DEPLOYMENT_TARGET = 15.0; SDKROOT = macosx; SWIFT_VERSION = 6.0; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; };
+			name = Debug;
+		};
+		A10000000000000000000013 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {MACOSX_DEPLOYMENT_TARGET = 15.0; SDKROOT = macosx; SWIFT_VERSION = 6.0; SWIFT_COMPILATION_MODE = wholemodule; };
+			name = Release;
+		};
+		A10000000000000000000014 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = org.thermaldeck.local;
+				PRODUCT_NAME = ThermalDeck;
+			};
+			name = Debug;
+		};
+		A10000000000000000000015 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = org.thermaldeck.local;
+				PRODUCT_NAME = ThermalDeck;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A10000000000000000000016 = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000012, A10000000000000000000013); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A10000000000000000000017 = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000014, A10000000000000000000015); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = A1000000000000000000000C;
+}

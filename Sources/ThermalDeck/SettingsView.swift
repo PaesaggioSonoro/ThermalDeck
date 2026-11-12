@@ -18,6 +18,7 @@ struct SettingsView: View {
                 Picker("Dashboard interval", selection: $model.preferences.interval) {
                     ForEach(Preferences.intervals, id: \.self) { Text("\($0) s").tag($0) }
                 }
+                if !model.snapshot.simulated { LoginItemView() }
             }
             Section("Menu Bar") {
                 Picker("Show", selection: $model.preferences.menuIndicator) {
@@ -64,6 +65,10 @@ struct SettingsView: View {
                     Text("This threshold is a personal alert preference.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+            }
+            Section("Privacy") {
+                Text("Monitoring and preferences stay on this Mac. Local history is optional.")
+                    .font(.callout).foregroundStyle(.secondary)
             }
             if let notice = model.preferencesNotice {
                 Text(notice).foregroundStyle(.secondary)

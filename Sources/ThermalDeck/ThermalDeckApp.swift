@@ -27,7 +27,7 @@ struct ThermalDeckApp: App {
         Settings {
             SettingsView(model: model)
                 .preferredColorScheme(model.preferences.appearance.colorScheme)
-                .frame(width: 520)
+                .frame(width: 530, height: 570)
         }
 
         MenuBarExtra {
@@ -39,7 +39,8 @@ struct ThermalDeckApp: App {
                 Text(fan.id.name + "  " + model.rpm(fan.speed.freshValue()))
             }
             Divider()
-            Text("ThermalDeck: Automatic")
+            Label("Automatic", systemImage: "checkmark")
+            Text("ThermalDeck leaves cooling to macOS.")
             Button("Open Dashboard") {
                 openWindow(id: "dashboard")
                 NSApp.activate()
