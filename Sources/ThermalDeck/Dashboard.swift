@@ -25,6 +25,7 @@ enum DashboardPage: String, CaseIterable, Identifiable {
 struct Dashboard: View {
     let model: AppModel
     @State private var page: DashboardPage? = .overview
+    @State private var compatibilityReport: CompatibilityReport?
 
     var body: some View {
         NavigationSplitView {
@@ -64,6 +65,7 @@ struct Dashboard: View {
             }
             .navigationTitle((page ?? .overview).rawValue)
         }
+        .sheet(item: $compatibilityReport) { CompatibilityReportView(report: $0) }
     }
 
     private var overview: some View {
@@ -159,6 +161,12 @@ struct Dashboard: View {
             LabeledContent("Fan control", value: "Unavailable")
             Text("Independent restoration after a control-process failure has not been verified.")
                 .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+            Button("Review Compatibility Report…") {
+                compatibilityReport = CompatibilityReport(
+                    snapshot: model.snapshot,
+                    version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development"
+                )
+            }
         }
         GroupBox("About") {
             LabeledContent(ThermalDeckApp.displayName, value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development")

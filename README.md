@@ -28,7 +28,7 @@ ThermalDeck is provided as is under the MIT license. Undocumented monitoring int
 
 ## Privacy and release status
 
-Monitoring, preferences, and alerts stay on the Mac. Disk history is opt-in, and exports require a local destination selected by the user. The app has no account, analytics, update checks, or network client.
+Monitoring, preferences, and alerts stay on the Mac. Disk history is opt-in, and exports require a local destination selected by the user. Compatibility offers a local report preview with hardware and telemetry availability. You choose whether to copy any of it. The app has no account, analytics, update checks, or network client.
 
 The development build has an ad-hoc signature. Physical sleep/wake, notification delivery, and login registration remain integration checks. Developer ID signing, notarization, Xcode verification, and wider hardware coverage are release steps. The working name collides with an existing Linux cooling project. [Release checklist](docs/releases/distribution.md) · [Naming findings](docs/releases/naming.md)
 

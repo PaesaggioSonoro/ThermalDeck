@@ -8,7 +8,13 @@
 - Unprivileged AppleSMC reading on the tested Mac16,7, including stopped-fan RPM and reported fan limits.
 - Bounded in-memory history, optional aggregated local history, local alert policy, and a graphical offline curve editor.
 - CSV and JSON history export, selectable menu bar fan, and dashboard chart visibility.
+- Battery charge, source, charging state, and power flow where supported.
+- A local, reviewable compatibility report.
 - Deterministic fan-control simulation, fault coverage, and local app packaging.
+
+### Fixed
+
+- Preference edits could recurse and terminate the app. Settings now normalize changes before writing them.
 
 ### Known limitations
 

@@ -13,3 +13,5 @@ Automatic leaves cooling to macOS. The Profiles page describes unavailable modes
 Login-item availability depends on the bundle and macOS. The local development bundle reported unavailable on the test host. Registration with a distribution build remains unverified.
 
 Use Export in History to save retained samples as CSV or JSON. Exports use UTC timestamps, Celsius for temperatures and RPM for fans. Fan metric IDs are zero-based firmware indices. Missing readings have no exported value. Explicit demo exports carry a simulation flag. You choose where to save the file.
+
+To describe a compatibility issue, choose Review Compatibility Report on the Compatibility page. The preview shows the app version, Mac model, chip, macOS version, and which telemetry is available. It leaves out readings, history, and serial numbers. Select and copy the fields you want to share.

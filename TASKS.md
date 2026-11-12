@@ -13,5 +13,5 @@
 | TD-08 | Profiles and offline curve editing | Complete, simulation only |
 | TD-09 | UI and integration | Complete, local smoke tested |
 | TD-10 | Reliability and performance | Complete, physical sleep/wake unverified |
-| TD-11 | Optional advanced features | Export, display options, and battery power complete |
+| TD-11 | Optional advanced features | Export, display options, battery power, and local diagnostics complete. Update checking awaits a release endpoint. |
 | TD-12 | Local release preparation | Complete, distribution gates pending |
