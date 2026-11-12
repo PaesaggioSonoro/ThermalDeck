@@ -54,3 +54,45 @@ import Testing
     #expect(evaluate(nil, .unavailable("offline"), 417) == [.unavailable])
     #expect(evaluate(nil, .unavailable("offline"), 800).isEmpty)
 }
+
+@Test func savedHistoryKeepsAnExplicitGapDuringAggregation() {
+    let start = Date(timeIntervalSinceReferenceDate: 20_000)
+    var history = HistoryBuffer()
+    let samples: [[SeriesKey: Double]] = [[.cpu: 55, .gpu: 40], [.gpu: 45], [.cpu: 59, .gpu: 42]]
+    for (index, values) in samples.enumerated() {
+        history.append(HistoryRecord(date: start.addingTimeInterval(Double(index)), values: values), retention: 300)
+    }
+    #expect(history.archiveRecords().count == 1)
+    #expect(history.archiveRecords().first?.values == [.gpu: 45])
+}
+
+@Test func restoresOnlyInRangeArchiveSamplesAndPreservesNewLiveSamples() {
+    let now = Date(timeIntervalSinceReferenceDate: 20_000)
+    var history = HistoryBuffer()
+    history.append(HistoryRecord(date: now, values: [.cpu: 51]), retention: 300)
+    let saved = [-301.0, -100.0, 1.0].map {
+        HistoryRecord(date: now.addingTimeInterval($0), values: [.cpu: 50])
+    }
+    history.restore(saved, at: now, retention: 300)
+    #expect(history.records.map(\.date) == [now.addingTimeInterval(-100), now])
+    #expect(history.records.last?.values[.cpu] == 51)
+}
+
+@Test func olderPreferencesLoadAndUnsafeValuesNormalize() throws {
+    var original = Preferences()
+    original.unit = .fahrenheit
+    let data = try JSONEncoder().encode(original)
+    var fields = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    fields.removeValue(forKey: "storedCurve")
+    fields["interval"] = -1
+    fields["retention"] = 99_000
+    fields["thresholdCelsius"] = 155
+    let legacy = try JSONSerialization.data(withJSONObject: fields)
+    var restored = try JSONDecoder().decode(Preferences.self, from: legacy)
+    restored.normalize()
+    #expect(restored.unit == .fahrenheit)
+    #expect(restored.interval == 1)
+    #expect(restored.retention == 900)
+    #expect(restored.thresholdCelsius == 90)
+    #expect(restored.storedCurve == nil)
+}

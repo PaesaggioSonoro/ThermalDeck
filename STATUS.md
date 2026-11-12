@@ -37,3 +37,7 @@ Automatic is the app's only active profile. Quiet, Balanced and Performance show
 ## Native integration
 
 The live app rendered the Mac16,7 dashboard, both physical fan detail panels, the temperature and RPM history, Automatic profile and offline editor, and Settings in a native UI smoke test. The local build reported login registration unavailable. The original vector-derived ICNS is packaged and the Xcode project passed plist validation. Full Xcode project builds remain unverified. Next action is lifecycle, reliability and performance verification.
+
+## Reliability
+
+Hardware reads use a dedicated serial executor. The dashboard switches between one-second default visible sampling and five seconds when closed, verified in local unified logs and on reopening. The 20-read physical probe had a 4.987 ms warm median. See docs/development/performance.md for CPU and memory observations and limitations. Sleep/wake logic invalidates snapshots and reconnects. Physical sleep/wake, notification delivery and login registration remain unverified. Next action is history export and lightweight indicator configuration.

@@ -1,3 +1,4 @@
+import AppKit
 import UserNotifications
 import ThermalCore
 
@@ -14,7 +15,7 @@ enum LocalAlerts {
 
     static func request() async {
         do {
-            _ = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+            _ = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert])
         } catch {
             AppModel.log.error("Notification authorization failed")
         }
@@ -32,5 +33,18 @@ enum LocalAlerts {
         } catch {
             AppModel.log.error("Local notification delivery failed")
         }
+    }
+}
+
+@MainActor
+final class AlertDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        UNUserNotificationCenter.current().delegate = self
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        [.banner, .list]
     }
 }

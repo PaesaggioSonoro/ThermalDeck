@@ -12,6 +12,6 @@
 | TD-07 | Validated hardware control and helper | Blocked by unverified independent recovery |
 | TD-08 | Profiles and offline curve editing | Complete, simulation only |
 | TD-09 | UI and integration | Complete, local smoke tested |
-| TD-10 | Reliability and performance | Next |
-| TD-11 | Optional advanced features | Pending |
+| TD-10 | Reliability and performance | Complete, physical sleep/wake unverified |
+| TD-11 | Optional advanced features | Next |
 | TD-12 | Local release preparation | Pending |

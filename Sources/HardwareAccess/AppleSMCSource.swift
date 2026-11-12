@@ -1,4 +1,5 @@
 import Darwin
+import Dispatch
 import Foundation
 import OSLog
 import ThermalCore
@@ -13,6 +14,8 @@ public actor AppleSMCSource: TelemetrySource {
 
     public nonisolated let machine: Machine
     public nonisolated let simulated = false
+    private let queue = DispatchSerialQueue(label: "ThermalDeck AppleSMC", qos: .utility)
+    public nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }
     private let includeUnclassified: Bool
     private var connection: SMCConnection?
     private var sensors: [Sensor] = []
@@ -85,10 +88,8 @@ public actor AppleSMCSource: TelemetrySource {
         let health: MonitorHealth
         if freshTemperatures == 0 && freshFans == 0 {
             health = .unavailable("AppleSMC returned no usable mapped temperatures or fan speeds.")
-            if !sensors.isEmpty || !fans.isEmpty {
-                self.connection = nil
-                nextDiscovery = started.advanced(by: .seconds(5))
-            }
+            self.connection = nil
+            nextDiscovery = started.advanced(by: .seconds(sensors.isEmpty && fans.isEmpty ? 30 : 5))
         } else if freshTemperatures == 0 || fanCount == nil ||
                     freshTemperatures != temperatures.count || freshFans != fans.count {
             health = .partial

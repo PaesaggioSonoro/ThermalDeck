@@ -1,8 +1,41 @@
+import Darwin
 import Foundation
 import HardwareAccess
 import ThermalCore
 
-let source = AppleSMCSource(includeUnclassified: CommandLine.arguments.contains("--catalog"))
+let arguments = Array(CommandLine.arguments.dropFirst())
+let includeCatalog = arguments.contains("--catalog")
+if let argument = arguments.first, argument == "--timing" {
+    guard arguments.count == 2, let count = Int(arguments[1]), (1...300).contains(count) else {
+        print("Usage: thermal-probe [--catalog | --timing SAMPLES (1–300)]")
+        exit(64)
+    }
+    let source = AppleSMCSource()
+    var durations: [Double] = []
+    var valid = 0
+    for index in 0..<count {
+        let start = ContinuousClock.now
+        let snapshot = await source.sample(validity: .seconds(3))
+        let elapsed = start.duration(to: .now).components
+        durations.append(Double(elapsed.seconds) * 1000 + Double(elapsed.attoseconds) / 1e15)
+        if snapshot.health == .live || snapshot.health == .partial { valid += 1 }
+        if index + 1 < count { try await ContinuousClock().sleep(until: start.advanced(by: .seconds(1))) }
+    }
+    let warm = Array(durations.dropFirst()).sorted()
+    let cold = durations.first ?? 0
+    print("\(source.machine.model) · \(source.machine.os) · \(valid)/\(count) usable snapshots")
+    print(String(format: "Cold %.3f ms", cold))
+    if !warm.isEmpty {
+        let p95 = warm[max(0, Int(ceil(0.95 * Double(warm.count))) - 1)]
+        print(String(format: "Warm median %.3f ms · p95 %.3f ms · peak %.3f ms", warm[warm.count / 2], p95, warm.last ?? 0))
+    }
+    exit(0)
+}
+guard arguments.isEmpty || arguments == ["--catalog"] else {
+    print("Usage: thermal-probe [--catalog | --timing SAMPLES (1–300)]")
+    exit(64)
+}
+let source = AppleSMCSource(includeUnclassified: includeCatalog)
 let started = ContinuousClock.now
 let sample = await source.sample(validity: .seconds(15))
 let elapsed = started.duration(to: .now)

@@ -1,3 +1,5 @@
+import AppKit
+import Combine
 import Foundation
 import Observation
 import OSLog
@@ -16,8 +18,11 @@ final class AppModel {
     @ObservationIgnored private var archiveRevision = 0
     @ObservationIgnored private var lastArchiveWrite: ContinuousClock.Instant?
     @ObservationIgnored private var loadingArchive = false
+    @ObservationIgnored private var preserveUnreadableArchive = false
     @ObservationIgnored private var alertPolicy = AlertPolicy()
     @ObservationIgnored private var visible = false
+    @ObservationIgnored private var sleeping = false
+    @ObservationIgnored private var lifecycle: [AnyCancellable] = []
 
     private(set) var snapshot: Snapshot
     private(set) var history = HistoryBuffer()
@@ -70,6 +75,13 @@ final class AppModel {
             preferences = Preferences()
         }
         if preferences.persistHistory { loadArchive() }
+        let workspace = NSWorkspace.shared.notificationCenter
+        lifecycle = [
+            workspace.publisher(for: NSWorkspace.willSleepNotification).receive(on: RunLoop.main)
+                .sink { [weak self] _ in self?.suspend() },
+            workspace.publisher(for: NSWorkspace.didWakeNotification).receive(on: RunLoop.main)
+                .sink { [weak self] _ in self?.wake() }
+        ]
         restart()
     }
 
@@ -80,10 +92,12 @@ final class AppModel {
     }
 
     func restart(reset: Bool = false) {
+        guard !sleeping else { return }
         polling?.cancel()
         revision += 1
         let current = revision
-        let interval = visible ? preferences.interval : max(5, preferences.interval)
+        let interval = visible ? preferences.interval : 5
+        Self.log.info("Polling cadence: \(interval, privacy: .public) seconds")
         let validity = Duration.seconds(interval * 3)
         polling = Task { [weak self, source] in
             if reset { await source.reset() }
@@ -97,6 +111,25 @@ final class AppModel {
                 try? await ContinuousClock().sleep(until: next, tolerance: .milliseconds(100))
             }
         }
+    }
+
+    private func suspend() {
+        sleeping = true
+        polling?.cancel()
+        expiryCheck?.cancel()
+        revision += 1
+        snapshot = Snapshot(machine: source.machine, health: .paused, simulated: source.simulated)
+        if preferences.collectHistory {
+            history.append(HistoryRecord(snapshot: snapshot), retention: preferences.retention)
+        }
+        evaluateAlerts()
+        Self.log.info("Monitoring paused for sleep")
+    }
+
+    private func wake() {
+        sleeping = false
+        snapshot = Snapshot(machine: source.machine, health: .waiting, simulated: source.simulated)
+        restart(reset: true)
     }
 
     func clearHistory() {
@@ -124,14 +157,20 @@ final class AppModel {
             history.append(HistoryRecord(snapshot: sample, now: now), retention: preferences.retention)
             writeHistoryIfDue(now: now)
         } else {
+            let count = history.records.count
             history.trim(at: sample.timestamp, retention: preferences.retention)
+            if history.records.count != count {
+                lastArchiveWrite = nil
+                writeHistoryIfDue(now: now)
+            }
         }
         evaluateAlerts()
         expiryCheck?.cancel()
         if sample.health == .live || sample.health == .partial {
+            let sampleExpiry = (sample.temperatures.map { $0.reading.expiresAt } + sample.fans.map { $0.speed.expiresAt }).min() ?? expires
             expiryCheck = Task { [weak self] in
                 do {
-                    try await ContinuousClock().sleep(until: expires, tolerance: .milliseconds(50))
+                    try await ContinuousClock().sleep(until: sampleExpiry, tolerance: .milliseconds(50))
                     guard let self else { return }
                     self.snapshot = Snapshot(machine: sample.machine, temperatures: sample.temperatures, fans: sample.fans,
                                              fanCount: sample.fanCount,
@@ -168,9 +207,16 @@ final class AppModel {
                 let saved = try await archive.load()
                 if archiveRevision == revision, preferences.persistHistory {
                     history.restore(saved, at: .now, retention: preferences.retention)
+                    if !saved.isEmpty {
+                        loadingArchive = false
+                        writeHistoryIfDue(now: .now)
+                    }
                 }
             } catch {
-                historyNotice = "The saved history file could not be read."
+                if archiveRevision == revision {
+                    preserveUnreadableArchive = true
+                    historyNotice = "The saved history file could not be read. Clear History to start a new archive."
+                }
                 Self.log.error("History load failed")
             }
             loadingArchive = false
@@ -178,9 +224,12 @@ final class AppModel {
     }
 
     private func writeHistoryIfDue(now: ContinuousClock.Instant) {
-        guard let archive, preferences.collectHistory, preferences.persistHistory, !loadingArchive,
-              !history.records.isEmpty,
+        guard let archive, preferences.persistHistory, !loadingArchive, !preserveUnreadableArchive,
               lastArchiveWrite.map({ $0.duration(to: now) >= .seconds(30) }) ?? true else { return }
+        guard !history.records.isEmpty else {
+            removeArchive()
+            return
+        }
         lastArchiveWrite = now
         archiveRevision += 1
         let revision = archiveRevision
@@ -198,6 +247,7 @@ final class AppModel {
 
     private func removeArchive() {
         guard let archive else { return }
+        preserveUnreadableArchive = false
         archiveRevision += 1
         let revision = archiveRevision
         Task {

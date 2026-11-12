@@ -5,6 +5,7 @@ import ThermalCore
 
 @main
 struct ThermalDeckApp: App {
+    @NSApplicationDelegateAdaptor(AlertDelegate.self) private var alertDelegate
     @State private var model = AppModel(source:
         CommandLine.arguments.contains("--demo") ? DemoSource() : AppleSMCSource())
     @Environment(\.openWindow) private var openWindow
@@ -19,8 +20,7 @@ struct ThermalDeckApp: App {
             Dashboard(model: model)
                 .preferredColorScheme(model.preferences.appearance.colorScheme)
                 .frame(minWidth: 680, minHeight: 450)
-                .onAppear { model.dashboardVisible(true) }
-                .onDisappear { model.dashboardVisible(false) }
+                .background(DashboardVisibility(change: model.dashboardVisible))
         }
         .defaultSize(width: 1060, height: 730)
 

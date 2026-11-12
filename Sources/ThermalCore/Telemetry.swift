@@ -35,7 +35,7 @@ public enum ReadingHealth: String, Sendable {
 public struct Reading: Sendable {
     public let value: Double?
     public let timestamp: Date
-    private let expiry: ContinuousClock.Instant
+    public let expiresAt: ContinuousClock.Instant
     private let initialHealth: ReadingHealth
 
     public init(
@@ -43,7 +43,7 @@ public struct Reading: Sendable {
         sampledAt: ContinuousClock.Instant = .now, validity: Duration = .seconds(10)
     ) {
         self.timestamp = timestamp
-        expiry = sampledAt.advanced(by: validity)
+        expiresAt = sampledAt.advanced(by: validity)
         if let raw, raw.isFinite, range.contains(raw) {
             value = raw
             initialHealth = .fresh
@@ -53,7 +53,7 @@ public struct Reading: Sendable {
         }
     }
 
-    public func hasExpired(at now: ContinuousClock.Instant = .now) -> Bool { now >= expiry }
+    public func hasExpired(at now: ContinuousClock.Instant = .now) -> Bool { now >= expiresAt }
 
     public func health(at now: ContinuousClock.Instant = .now) -> ReadingHealth {
         initialHealth == .fresh && hasExpired(at: now) ? .stale : initialHealth
