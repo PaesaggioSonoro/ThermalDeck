@@ -29,31 +29,39 @@ final class AppModel {
     private(set) var preferencesNotice: String?
     private(set) var historyNotice: String?
 
+    private var storedPreferences: Preferences
+
     var preferences: Preferences {
-        didSet {
-            preferences.normalize()
-            if !source.simulated, preferencesNotice == nil, let data = try? JSONEncoder().encode(preferences) {
+        get { storedPreferences }
+        set {
+            var normalized = newValue
+            normalized.normalize()
+            let oldValue = storedPreferences
+            guard normalized != oldValue else { return }
+            storedPreferences = normalized
+            if !source.simulated, preferencesNotice == nil, let data = try? JSONEncoder().encode(normalized) {
                 defaults.set(data, forKey: "preferences")
             }
-            if oldValue.interval != preferences.interval { restart() }
-            if oldValue.retention != preferences.retention {
-                history.trim(at: .now, retention: preferences.retention)
+            if oldValue.interval != normalized.interval { restart() }
+            if oldValue.retention != normalized.retention {
+                history.trim(at: .now, retention: normalized.retention)
                 lastArchiveWrite = nil
                 writeHistoryIfDue(now: .now)
             }
-            if oldValue.persistHistory != preferences.persistHistory {
-                if preferences.persistHistory {
+            if oldValue.persistHistory != normalized.persistHistory {
+                if normalized.persistHistory {
                     lastArchiveWrite = nil
                     writeHistoryIfDue(now: .now)
                 } else {
                     removeArchive()
                 }
             }
-            if oldValue.thresholdCelsius != preferences.thresholdCelsius { alertPolicy.resetTemperature() }
+            if oldValue.thresholdCelsius != normalized.thresholdCelsius { alertPolicy.resetTemperature() }
         }
     }
 
-    init(source: any TelemetrySource, defaults: UserDefaults = .standard) {
+    init(source: any TelemetrySource, defaults: UserDefaults = .standard,
+         workspace: NotificationCenter = NSWorkspace.shared.notificationCenter) {
         self.source = source
         self.defaults = defaults
         snapshot = Snapshot(machine: source.machine, health: .waiting, simulated: source.simulated)
@@ -66,16 +74,15 @@ final class AppModel {
         if !source.simulated, let data = defaults.data(forKey: "preferences") {
             if var saved = try? JSONDecoder().decode(Preferences.self, from: data), saved.version == Preferences.schema {
                 saved.normalize()
-                preferences = saved
+                storedPreferences = saved
             } else {
-                preferences = Preferences()
+                storedPreferences = Preferences()
                 preferencesNotice = "Saved settings could not be read. Defaults are active for this session."
             }
         } else {
-            preferences = Preferences()
+            storedPreferences = Preferences()
         }
         if preferences.persistHistory { loadArchive() }
-        let workspace = NSWorkspace.shared.notificationCenter
         lifecycle = [
             workspace.publisher(for: NSWorkspace.willSleepNotification).receive(on: RunLoop.main)
                 .sink { [weak self] _ in self?.suspend() },

@@ -17,6 +17,7 @@ let package = Package(
         .target(name: "HardwareAccess", dependencies: ["ThermalCore", "SMCRead"]),
         .executableTarget(name: "ThermalProbe", dependencies: ["HardwareAccess", "ThermalCore"]),
         .executableTarget(name: "ThermalDeck", dependencies: ["HardwareAccess", "ThermalCore"]),
-        .testTarget(name: "ThermalCoreTests", dependencies: ["ThermalCore", "HardwareAccess", "ControlSimulation"])
+        .testTarget(name: "ThermalCoreTests", dependencies: ["ThermalCore", "HardwareAccess", "ControlSimulation"]),
+        .testTarget(name: "ThermalDeckTests", dependencies: ["ThermalDeck", "ThermalCore"])
     ]
 )
