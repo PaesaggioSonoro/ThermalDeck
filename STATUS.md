@@ -6,4 +6,6 @@ The workspace started empty. Local development runs on an arm64 Mac16,7 with App
 
 Use Command Line Tools for package compilation and app packaging. Full Xcode is needed for xcodebuild and Xcode-specific verification. Install a compatible version through Apple's [Xcode resources](https://developer.apple.com/xcode/resources/) if that verification is needed.
 
-Next action is to pin and review the reference repositories and specify the read-only hardware boundary. No app or hardware validation exists at this checkpoint.
+## Research checkpoint
+
+Pinned reference revisions, ABI assumptions and scope are recorded in docs/hardware/research.md. The architecture uses SwiftUI, SwiftPM, and a C read-only boundary. Control remains disabled. Next action is the launchable native foundation, followed by a hardware probe.

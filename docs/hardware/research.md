@@ -1,0 +1,17 @@
+# Apple Silicon hardware research
+
+Reviewed 2026-11-12. These are upstream observations. ThermalDeck's physical tests are recorded in [compatibility](compatibility.md).
+
+| Reference | Exact revision | License | Evidence and limits |
+| --- | --- | --- | --- |
+| [Stats](https://github.com/exelban/stats/tree/f2f99e51a2bfd86176a357dd296486d3a41212c3) | f2f99e51a2bfd86176a357dd296486d3a41212c3 | MIT | 2026-11-11 tip. `SMC/smc.swift` shows ABI, cache and formats. `Modules/Sensors/values.swift` provides generation-specific classifications. `SMC/Helper/main.swift` checks connection and executable signing before invoking a separate SMC executable. The model table is a mapping reference. It supplies no proof of restoration on this host. |
+| [MacsFan](https://github.com/matejrondzik/macsfan/tree/7c1c52fee50f7b1cd914ae10275014717275214f) | 7c1c52fee50f7b1cd914ae10275014717275214f | MIT | 2026-07-09 tip. `MacsFan.swift` reads fan count and telemetry through AppleSMC. README claims M3/M4 support and describes diagnostic override and root re-execution, including optional sudoers configuration. A matching Mac16,7 OS and crash-recovery test was not established. |
+| [MacFanControl](https://github.com/raminsharifi/MacFanControl/tree/1173cd756d8d4b355395a00648b36e322bb52d26) | 1173cd756d8d4b355395a00648b36e322bb52d26 | MIT | 2026-11-05 tip. `src/smc.rs` corroborates ABI, little-endian float, signed big-endian SP78 and unsigned FPE2. README reports physical Mac15,7/M3 Pro on macOS 26 with root for writes. Other M3/M4 are expected by the author. M5 and Intel were untested by that project. |
+| [macos-smc-fan](https://github.com/agoodkind/macos-smc-fan/blob/31a1feae0c4999ebd8cdddfbd90d2c98182091b8/docs/research.md) | 31a1feae0c4999ebd8cdddfbd90d2c98182091b8 | MIT | Reports Intel, M1 Pro, Mac16,6 and Mac17,7 testing. M5 macOS 26.4.1 had different mode-key casing and lacked the M4 diagnostic flag. Reports firmware rejection of direct manual mode under thermalmonitord on the tested M4. Helper termination with override active and reliable firmware fallback remain unverified. |
+| [macmon](https://github.com/vladkens/macmon/tree/850812f405c2e4180d03a31cf3f77674f9d9520e) | 850812f405c2e4180d03a31cf3f77674f9d9520e | MIT | 2026-11-11 tip. `src/metrics.rs` separates SMC and IOHID temperature sources, probes fan readings and uses stable firmware order. Different sensor sources and releases can report different aggregates. |
+
+Apple documents the [IOKit framework](https://developer.apple.com/documentation/iokit) and [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice). The AppleSMC user-client protocol used by these tools is undocumented. Use an 80-byte checked ABI, read selectors only, and verify both the kernel and firmware results. Discover live key metadata and bound catalog sizes. FourCC values are encoded in big-endian character order. Byte decoding depends on each key's declared format.
+
+Use a limited source-backed mapping for CPU/GPU zones on the exact development model. Preserve unknown keys as unclassified and exclude them from aggregates and control. A plausible number and a matching upstream key do not establish control trust, thermal accuracy, or physical core placement.
+
+ThermalDeck implements the protocol independently and references upstream for interface facts and candidate key classifications. No upstream program, assets, dependency, or privileged code is included.
