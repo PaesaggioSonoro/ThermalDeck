@@ -97,7 +97,7 @@ struct Dashboard: View {
                     }
                 }
             }
-            if model.preferences.collectHistory {
+            if model.preferences.collectHistory && model.preferences.showOverviewChart != false {
                 let end = model.snapshot.timestamp
                 let start = end.addingTimeInterval(-300)
                 HistoryChart(title: "Temperature · last 5 min", unit: model.preferences.unit.symbol,

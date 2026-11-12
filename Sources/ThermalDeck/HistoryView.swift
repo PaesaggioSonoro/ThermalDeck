@@ -27,6 +27,7 @@ struct HistoryView: View {
                 Spacer()
                 Toggle("Battery", isOn: $battery)
                 Toggle("Targets", isOn: $targets)
+                HistoryExportButton(model: model)
             }
             .onChange(of: availableMinutes, initial: true) {
                 if minutes > availableMinutes { minutes = availableMinutes }

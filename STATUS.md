@@ -41,3 +41,7 @@ The live app rendered the Mac16,7 dashboard, both physical fan detail panels, th
 ## Reliability
 
 Hardware reads use a dedicated serial executor. The dashboard switches between one-second default visible sampling and five seconds when closed, verified in local unified logs and on reopening. The 20-read physical probe had a 4.987 ms warm median. See docs/development/performance.md for CPU and memory observations and limitations. Sleep/wake logic invalidates snapshots and reconnects. Physical sleep/wake, notification delivery and login registration remain unverified. Next action is history export and lightweight indicator configuration.
+
+## Optional features
+
+CSV and JSON export include units, UTC timestamps, measured and reported fan series, and an explicit simulation marker. Settings can select the menu bar fan and hide the Overview chart. Power metrics, optional update checks and diagnostic sharing remain deferred. Next action is local release preparation and final verification.

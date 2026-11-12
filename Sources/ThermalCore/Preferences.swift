@@ -26,6 +26,14 @@ public enum MenuIndicator: String, CaseIterable, Codable, Sendable {
     case fan = "Fan 1 RPM"
     case temperatureAndFan = "Peak and fan 1"
     case icon = "Icon only"
+
+    public var label: String {
+        switch self {
+        case .fan: "Fan RPM"
+        case .temperatureAndFan: "Peak and fan"
+        default: rawValue
+        }
+    }
 }
 
 public struct Preferences: Codable, Equatable, Sendable {
@@ -44,12 +52,15 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var thresholdCelsius = 90.0
     public var menuIndicator = MenuIndicator.peak
     public var storedCurve: FanCurve?
+    public var menuFanIndex: Int?
+    public var showOverviewChart: Bool?
 
     public init() {}
 
     public mutating func normalize() {
         if !Self.intervals.contains(interval) { interval = 1 }
         if !Self.retentions.contains(retention) { retention = 900 }
+        if let menuFanIndex, !(0...9).contains(menuFanIndex) { self.menuFanIndex = nil }
         if !thresholdCelsius.isFinite || !(40...115).contains(thresholdCelsius) { thresholdCelsius = 90 }
     }
 }

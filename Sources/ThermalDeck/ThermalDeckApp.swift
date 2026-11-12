@@ -23,6 +23,12 @@ struct ThermalDeckApp: App {
                 .background(DashboardVisibility(change: model.dashboardVisible))
         }
         .defaultSize(width: 1060, height: 730)
+        .commands {
+            CommandGroup(after: .windowArrangement) {
+                Button("Open Dashboard", action: showDashboard)
+                    .keyboardShortcut("0")
+            }
+        }
 
         Settings {
             SettingsView(model: model)
@@ -35,16 +41,13 @@ struct ThermalDeckApp: App {
             Text(model.snapshot.health.label)
             Text("CPU  " + model.temperature(model.snapshot.peak(.cpu)))
             Text("GPU  " + model.temperature(model.snapshot.peak(.gpu)))
-            if let fan = model.snapshot.fans.first {
+            if let fan = menuFan {
                 Text(fan.id.name + "  " + model.rpm(fan.speed.freshValue()))
             }
             Divider()
             Label("Automatic", systemImage: "checkmark")
             Text("ThermalDeck leaves cooling to macOS.")
-            Button("Open Dashboard") {
-                openWindow(id: "dashboard")
-                NSApp.activate()
-            }
+            Button("Open Dashboard", action: showDashboard)
             Button("Settings…") {
                 openSettings()
                 NSApp.activate()
@@ -54,7 +57,7 @@ struct ThermalDeckApp: App {
                 .keyboardShortcut("q")
         } label: {
             let snapshot = model.snapshot
-            let fan = model.rpm(snapshot.fans.first?.speed.freshValue())
+            let fan = model.rpm(menuFan?.speed.freshValue())
             switch model.preferences.menuIndicator {
             case .cpu: Label(model.temperature(snapshot.peak(.cpu)), systemImage: "thermometer.medium")
             case .gpu: Label(model.temperature(snapshot.peak(.gpu)), systemImage: "thermometer.medium")
@@ -64,6 +67,16 @@ struct ThermalDeckApp: App {
             case .icon: Image(systemName: "thermometer.medium").accessibilityLabel(Self.displayName)
             }
         }
+    }
+
+    private var menuFan: Fan? {
+        let index = model.preferences.menuFanIndex ?? 0
+        return model.snapshot.fans.first { $0.id.rawValue == index }
+    }
+
+    private func showDashboard() {
+        openWindow(id: "dashboard")
+        NSApp.activate()
     }
 }
 
