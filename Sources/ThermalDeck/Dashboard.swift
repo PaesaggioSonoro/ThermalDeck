@@ -53,7 +53,7 @@ struct Dashboard: View {
                     case .overview: overview
                     case .sensors: SensorView(model: model)
                     case .fans: FanView(model: model)
-                    case .history: ContentUnavailableView("No history", systemImage: "chart.xyaxis.line")
+                    case .history: HistoryView(model: model)
                     case .profiles: Text("Automatic cooling · ThermalDeck does not control the fans.")
                     case .compatibility: compatibility
                     }
@@ -79,6 +79,13 @@ struct Dashboard: View {
                         LabeledContent(fan.id.name, value: model.rpm(fan.speed.freshValue()))
                     }
                 }
+            }
+            if model.preferences.collectHistory {
+                let end = model.snapshot.timestamp
+                let start = end.addingTimeInterval(-300)
+                HistoryChart(title: "Temperature · last 5 min", unit: model.preferences.unit.symbol,
+                             points: model.history.plot([.cpu, .gpu], from: start, through: end),
+                             range: start...end, temperatureUnit: model.preferences.unit)
             }
             GroupBox {
                 LabeledContent("Monitoring", value: model.snapshot.health.label)

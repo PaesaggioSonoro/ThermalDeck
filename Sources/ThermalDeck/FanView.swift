@@ -17,7 +17,7 @@ struct FanView: View {
                     LabeledContent("Reported minimum", value: model.rpm(fresh(fan.minimum, for: fan)))
                     LabeledContent("Reported maximum", value: model.rpm(fresh(fan.maximum, for: fan)))
                     Divider()
-                    LabeledContent("Reported mode", value: fan.speed.health() == .stale ? "Unavailable" : fan.mode.rawValue)
+                    LabeledContent("Reported mode", value: fan.speed.hasExpired() ? "Unavailable" : fan.mode.rawValue)
                     LabeledContent("Measurement", value: fan.speed.health().rawValue)
                 } label: {
                     Label(fan.id.name, systemImage: "fan")
@@ -29,6 +29,6 @@ struct FanView: View {
     }
 
     private func fresh(_ value: Double?, for fan: Fan) -> Double? {
-        fan.speed.health() == .stale ? nil : value
+        fan.speed.hasExpired() ? nil : value
     }
 }

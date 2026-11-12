@@ -21,3 +21,7 @@ The Mac16,7 read-only probe returned two CPU zones, eight GPU zones and two batt
 ## Fan monitoring
 
 The same unprivileged probe found two fans, both stopped in firmware mode 3 with reported bounds of 1,350–5,777 RPM and targets of 0 RPM. The app displays current and target separately. Five tests passed. No spinning-load or fan-control test was performed. Next action is bounded history and local notifications.
+
+## Charts, history and notifications
+
+The app builds with native Charts, fixed time and sample limits, a local opt-in archive, and permission-aware local alert delivery. The alert and archive policies are covered by tests. Notification delivery has not been manually exercised. Next action is deterministic control simulation and an explicit feasibility decision.

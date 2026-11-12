@@ -53,8 +53,10 @@ public struct Reading: Sendable {
         }
     }
 
+    public func hasExpired(at now: ContinuousClock.Instant = .now) -> Bool { now >= expiry }
+
     public func health(at now: ContinuousClock.Instant = .now) -> ReadingHealth {
-        initialHealth == .fresh && now >= expiry ? .stale : initialHealth
+        initialHealth == .fresh && hasExpired(at: now) ? .stale : initialHealth
     }
 
     public func freshValue(at now: ContinuousClock.Instant = .now) -> Double? {
@@ -79,7 +81,7 @@ public struct Temperature: Identifiable, Sendable {
 public struct FanID: RawRepresentable, Hashable, Codable, Sendable {
     public let rawValue: Int
     public init(rawValue: Int) { self.rawValue = rawValue }
-    public var name: String { "Fan \(rawValue + 1)" }
+    public var name: String { "Fan \(rawValue == Int.max ? rawValue : rawValue + 1)" }
 }
 
 public enum FanMode: String, Sendable {
