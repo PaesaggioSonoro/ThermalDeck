@@ -1,0 +1,16 @@
+/.local/
+/.build/
+/DerivedData/
+/dist/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+*.log
+*.ips
+*.dSYM
+*.p12
+*.p8
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
