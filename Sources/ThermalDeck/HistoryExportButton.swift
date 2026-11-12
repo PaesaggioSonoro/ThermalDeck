@@ -7,6 +7,7 @@ struct HistoryExportButton: View {
     @State private var document: ExportDocument?
     @State private var type = UTType.commaSeparatedText
     @State private var exporting = false
+    @State private var preparing = false
     @State private var error = false
 
     var body: some View {
@@ -17,7 +18,7 @@ struct HistoryExportButton: View {
             Label("Export…", systemImage: "square.and.arrow.up")
         }
         .fixedSize()
-        .disabled(model.history.records.allSatisfy { $0.values.isEmpty })
+        .disabled(preparing || model.history.records.allSatisfy { $0.values.isEmpty })
         .fileExporter(isPresented: $exporting, document: document, contentType: type,
                       defaultFilename: model.snapshot.simulated ? "ThermalDeck-Simulation" : "ThermalDeck-History") { result in
             if case .failure = result { error = true }
@@ -28,13 +29,21 @@ struct HistoryExportButton: View {
     }
 
     private func prepare(_ format: HistoryExport.Format) {
-        do {
-            let data = try HistoryExport.encode(model.history.records, simulated: model.snapshot.simulated, format: format)
-            type = format == .csv ? .commaSeparatedText : .json
-            document = ExportDocument(data: data)
-            exporting = true
-        } catch {
-            self.error = true
+        let records = model.history.records
+        let simulated = model.snapshot.simulated
+        preparing = true
+        Task {
+            defer { preparing = false }
+            do {
+                let data = try await Task.detached(priority: .userInitiated) {
+                    try HistoryExport.encode(records, simulated: simulated, format: format)
+                }.value
+                type = format == .csv ? .commaSeparatedText : .json
+                document = ExportDocument(data: data)
+                exporting = true
+            } catch {
+                self.error = true
+            }
         }
     }
 }

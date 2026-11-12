@@ -46,15 +46,21 @@ struct ProfilesView: View {
 
 private struct CurveEditor: View {
     let model: AppModel
-    @State private var points: [CurvePoint]
+    private struct DraftPoint: Identifiable {
+        let id = UUID()
+        var value: CurvePoint
+    }
+
+    @State private var draft: [DraftPoint]
     @State private var selectedX: Double?
     @State private var previewCelsius = 65.0
 
     init(model: AppModel) {
         self.model = model
-        _points = State(initialValue: model.preferences.storedCurve?.points ?? [
+        let initial = model.preferences.storedCurve?.points ?? [
             .init(celsius: 45, rpm: 1700), .init(celsius: 65, rpm: 3000), .init(celsius: 85, rpm: 4800)
-        ])
+        ]
+        _draft = State(initialValue: initial.map { DraftPoint(value: $0) })
     }
 
     var body: some View {
@@ -96,19 +102,20 @@ private struct CurveEditor: View {
             LabeledContent(model.temperature(previewCelsius), value: model.rpm(curve?.target(for: previewCelsius)))
                 .monospacedDigit()
             Divider().padding(.vertical, 5)
-            ForEach(points.indices, id: \.self) { index in
-                let displayed = Binding(get: { unit.displayValue(points[index].celsius) },
-                                        set: { points[index].celsius = unit.celsiusValue($0) })
+            ForEach(Array(draft.enumerated()), id: \.element.id) { index, entry in
+                let temperature = field(entry, \.celsius)
+                let displayed = Binding(get: { unit.displayValue(temperature.wrappedValue) },
+                                        set: { temperature.wrappedValue = unit.celsiusValue($0) })
                 HStack {
                     Text("Point \(index + 1)").font(.callout).foregroundStyle(.secondary)
                     Spacer()
                     TextField("Temperature for point \(index + 1)", value: displayed, format: format)
                         .labelsHidden().frame(width: 76)
                     Text(unit.symbol).frame(width: 24, alignment: .leading)
-                    TextField("RPM for point \(index + 1)", value: $points[index].rpm, format: format)
+                    TextField("RPM for point \(index + 1)", value: field(entry, \.rpm), format: format)
                         .labelsHidden().frame(width: 84)
                     Text("RPM")
-                    Button { points.remove(at: index) } label: {
+                    Button { draft.removeAll { $0.id == entry.id } } label: {
                         Image(systemName: "minus.circle").accessibilityLabel("Remove point \(index + 1)")
                     }
                     .buttonStyle(.borderless).disabled(points.count <= 2)
@@ -122,7 +129,7 @@ private struct CurveEditor: View {
             HStack {
                 Button("Add Point") {
                     guard let last = points.last else { return }
-                    points.append(.init(celsius: min(115, last.celsius + 5), rpm: last.rpm))
+                    draft.append(DraftPoint(value: .init(celsius: min(115, last.celsius + 5), rpm: last.rpm)))
                 }
                 .disabled(points.count >= 12)
                 Spacer()
@@ -134,6 +141,19 @@ private struct CurveEditor: View {
             }
             .padding(.top, 7)
         }
+    }
+
+    private var points: [CurvePoint] { draft.map(\.value) }
+
+    private func field(_ entry: DraftPoint, _ path: WritableKeyPath<CurvePoint, Double>) -> Binding<Double> {
+        Binding(
+            get: { (draft.first { $0.id == entry.id }?.value ?? entry.value)[keyPath: path] },
+            set: { newValue in
+                if let index = draft.firstIndex(where: { $0.id == entry.id }) {
+                    draft[index].value[keyPath: path] = newValue
+                }
+            }
+        )
     }
 
     private var validationMessage: String? {
