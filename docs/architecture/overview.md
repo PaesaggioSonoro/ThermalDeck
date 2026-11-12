@@ -17,3 +17,5 @@ ThermalCore defines snapshots, readings, freshness, trust, history, configuratio
 Dates support presentation and history. Use a monotonic clock for sampling deadlines and simulated lease expiry. Resample after sleep and reject expired telemetry before presenting or using it. Bound sample count independently of retention duration.
 
 Potential XPC control is a separate future design. See the ADRs and hardware research for constraints.
+
+The test-only ControlSimulation module models authorization, trusted inputs, leases, bounded targets and restoration. See [fan control feasibility](../safety/fan-control.md) for the state diagram and release gate.

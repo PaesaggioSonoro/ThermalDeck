@@ -12,10 +12,11 @@ let package = Package(
     ],
     targets: [
         .target(name: "ThermalCore"),
+        .target(name: "ControlSimulation", dependencies: ["ThermalCore"]),
         .target(name: "SMCRead", linkerSettings: [.linkedFramework("IOKit")]),
         .target(name: "HardwareAccess", dependencies: ["ThermalCore", "SMCRead"]),
         .executableTarget(name: "ThermalProbe", dependencies: ["HardwareAccess", "ThermalCore"]),
         .executableTarget(name: "ThermalDeck", dependencies: ["HardwareAccess", "ThermalCore"]),
-        .testTarget(name: "ThermalCoreTests", dependencies: ["ThermalCore", "HardwareAccess"])
+        .testTarget(name: "ThermalCoreTests", dependencies: ["ThermalCore", "HardwareAccess", "ControlSimulation"])
     ]
 )

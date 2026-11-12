@@ -8,9 +8,9 @@
 | TD-03 | Temperature discovery, validation and polling | Complete, partial model mapping |
 | TD-04 | Physical fan monitoring | Complete, stopped-state tested |
 | TD-05 | History, charts and notifications | Complete, policy tested |
-| TD-06 | Control feasibility and simulation | Next |
-| TD-07 | Validated hardware control and helper | Conditional |
-| TD-08 | Profiles and offline curve editing | Pending |
+| TD-06 | Control feasibility and simulation | Complete, simulated only |
+| TD-07 | Validated hardware control and helper | Blocked by unverified independent recovery |
+| TD-08 | Profiles and offline curve editing | Next |
 | TD-09 | UI and integration | Pending |
 | TD-10 | Reliability and performance | Pending |
 | TD-11 | Optional advanced features | Pending |

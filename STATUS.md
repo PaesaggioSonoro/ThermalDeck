@@ -25,3 +25,7 @@ The same unprivileged probe found two fans, both stopped in firmware mode 3 with
 ## Charts, history and notifications
 
 The app builds with native Charts, fixed time and sample limits, a local opt-in archive, and permission-aware local alert delivery. The alert and archive policies are covered by tests. Notification delivery has not been manually exercised. Next action is deterministic control simulation and an explicit feasibility decision.
+
+## Fan control feasibility
+
+Fourteen tests passed, including 28 parameterized start and active control fault cases and dedicated settling, transition and curve tests. The tests use virtual time and an in-memory plant. Hardware control is blocked by undocumented override semantics, absent control-grade telemetry and unverified recovery after helper failure. No write authorization is requested while these prerequisites are open. Next action is the Automatic profile and offline curve editor.
