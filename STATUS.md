@@ -13,3 +13,7 @@ Pinned reference revisions, ABI assumptions and scope are recorded in docs/hardw
 ## Native foundation
 
 The ad-hoc-signed SwiftUI bundle built and launched in explicit demo mode. The dashboard showed the simulation label and live CPU/GPU sample values. Two telemetry tests passed. The installed CLT defaults to SDK 27, which exposes a SwiftUI State macro whose plugin is absent. The local Swift wrapper selects the installed SDK 26.5 and the test wrapper locates the Swift Testing plugin. CLT's SwiftBuild emits missing optional developer search-path warnings on this host. Next action is read-only telemetry discovery on Mac16,7.
+
+## Temperature monitoring
+
+The Mac16,7 read-only probe returned two CPU zones, eight GPU zones and two battery readings. Upstream-mapped Tp keys had inconsistent values and were excluded. Four tests passed and the normal app bundle compiled against the hardware reader. Next action is read-only fan discovery and an end-to-end live UI smoke test.

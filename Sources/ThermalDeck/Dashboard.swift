@@ -51,7 +51,7 @@ struct Dashboard: View {
                     }
                     switch page ?? .overview {
                     case .overview: overview
-                    case .sensors: ContentUnavailableView("No temperature data", systemImage: "thermometer.medium")
+                    case .sensors: SensorView(model: model)
                     case .fans: ContentUnavailableView("No fan data", systemImage: "fan")
                     case .history: ContentUnavailableView("No history", systemImage: "chart.xyaxis.line")
                     case .profiles: Text("Automatic cooling · ThermalDeck does not control the fans.")

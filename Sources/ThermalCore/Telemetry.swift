@@ -20,6 +20,7 @@ public struct SensorID: RawRepresentable, Hashable, Codable, Sendable {
 public enum SensorGroup: String, CaseIterable, Sendable {
     case cpu = "CPU zones"
     case gpu = "GPU zones"
+    case battery = "Battery"
     case memory = "Memory proximity"
     case other = "Unclassified"
 }

@@ -1,22 +1,12 @@
 import AppKit
+import HardwareAccess
 import SwiftUI
 import ThermalCore
-
-private enum WaitingSource: TelemetrySource {
-    case initial
-    var machine: Machine { Machine(model: "Mac", chip: "Apple Silicon", os: ProcessInfo.processInfo.operatingSystemVersionString) }
-    var simulated: Bool { false }
-
-    func sample(validity: Duration) async -> Snapshot {
-        Snapshot(machine: machine, health: .unavailable("Hardware discovery is pending."))
-    }
-    func reset() async {}
-}
 
 @main
 struct ThermalDeckApp: App {
     @State private var model = AppModel(source:
-        CommandLine.arguments.contains("--demo") ? DemoSource() : WaitingSource.initial)
+        CommandLine.arguments.contains("--demo") ? DemoSource() : AppleSMCSource())
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
