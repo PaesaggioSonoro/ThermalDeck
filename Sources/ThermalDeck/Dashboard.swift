@@ -54,7 +54,7 @@ struct Dashboard: View {
                     case .sensors: SensorView(model: model)
                     case .fans: FanView(model: model)
                     case .history: HistoryView(model: model)
-                    case .profiles: Text("Automatic cooling · ThermalDeck does not control the fans.")
+                    case .profiles: ProfilesView(model: model)
                     case .compatibility: compatibility
                     }
                 }

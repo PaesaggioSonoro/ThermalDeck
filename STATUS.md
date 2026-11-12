@@ -29,3 +29,7 @@ The app builds with native Charts, fixed time and sample limits, a local opt-in 
 ## Fan control feasibility
 
 Fourteen tests passed, including 28 parameterized start and active control fault cases and dedicated settling, transition and curve tests. The tests use virtual time and an in-memory plant. Hardware control is blocked by undocumented override semantics, absent control-grade telemetry and unverified recovery after helper failure. No write authorization is requested while these prerequisites are open. Next action is the Automatic profile and offline curve editor.
+
+## Cooling profiles
+
+Automatic is the app's only active profile. Quiet, Balanced and Performance show their unavailable state. The Custom editor validates a versioned local curve and previews interpolated targets using simulated temperatures. It cannot apply a target. The bundle builds and the 14-test suite passes. Next action is end-to-end live UI verification and packaging.

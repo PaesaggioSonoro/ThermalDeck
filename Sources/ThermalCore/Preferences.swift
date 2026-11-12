@@ -43,6 +43,7 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var alerts = false
     public var thresholdCelsius = 90.0
     public var menuIndicator = MenuIndicator.peak
+    public var storedCurve: FanCurve?
 
     public init() {}
 
