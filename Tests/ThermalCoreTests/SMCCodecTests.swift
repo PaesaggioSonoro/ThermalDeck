@@ -18,3 +18,11 @@ import Testing
     #expect(SMCCodec.numeric([0, 0, 0xC0, 0x7F], format: "flt ")?.isNaN == true)
     #expect(SMCCodec.numeric([50, 0], format: "ch8*") == nil)
 }
+
+@Test func fanCountMustFitTheFirmwareKeyIndexAndBeIntegral() {
+    #expect(AppleSMCSource.validFanCount(0) == 0)
+    #expect(AppleSMCSource.validFanCount(2) == 2)
+    #expect(AppleSMCSource.validFanCount(11) == nil)
+    #expect(AppleSMCSource.validFanCount(1.5) == nil)
+    #expect(AppleSMCSource.validFanCount(.infinity) == nil)
+}

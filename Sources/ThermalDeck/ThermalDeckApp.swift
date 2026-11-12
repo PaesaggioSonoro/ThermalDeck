@@ -35,8 +35,11 @@ struct ThermalDeckApp: App {
             Text(model.snapshot.health.label)
             Text("CPU  " + model.temperature(model.snapshot.peak(.cpu)))
             Text("GPU  " + model.temperature(model.snapshot.peak(.gpu)))
+            if let fan = model.snapshot.fans.first {
+                Text(fan.id.name + "  " + model.rpm(fan.speed.freshValue()))
+            }
             Divider()
-            Text("Profile: Automatic")
+            Text("ThermalDeck: Automatic")
             Button("Open Dashboard") {
                 openWindow(id: "dashboard")
                 NSApp.activate()

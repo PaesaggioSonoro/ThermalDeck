@@ -17,3 +17,7 @@ The ad-hoc-signed SwiftUI bundle built and launched in explicit demo mode. The d
 ## Temperature monitoring
 
 The Mac16,7 read-only probe returned two CPU zones, eight GPU zones and two battery readings. Upstream-mapped Tp keys had inconsistent values and were excluded. Four tests passed and the normal app bundle compiled against the hardware reader. Next action is read-only fan discovery and an end-to-end live UI smoke test.
+
+## Fan monitoring
+
+The same unprivileged probe found two fans, both stopped in firmware mode 3 with reported bounds of 1,350–5,777 RPM and targets of 0 RPM. The app displays current and target separately. Five tests passed. No spinning-load or fan-control test was performed. Next action is bounded history and local notifications.

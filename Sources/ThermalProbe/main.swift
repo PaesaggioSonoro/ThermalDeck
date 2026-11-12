@@ -17,3 +17,11 @@ for group in SensorGroup.allCases {
         print("  \(value.id.rawValue) [\(value.format)] \(reading)")
     }
 }
+
+print("Reported fans: " + (sample.fanCount.map(String.init) ?? "Unavailable"))
+for fan in sample.fans {
+    func rpm(_ value: Double?) -> String {
+        value.map { String(format: "%.1f RPM", $0) } ?? "Unavailable"
+    }
+    print("  F\(fan.id.rawValue) · measured \(rpm(fan.speed.freshValue())) · minimum \(rpm(fan.minimum)) · maximum \(rpm(fan.maximum)) · target \(rpm(fan.target)) · \(fan.mode.rawValue)")
+}

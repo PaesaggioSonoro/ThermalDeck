@@ -52,7 +52,7 @@ struct Dashboard: View {
                     switch page ?? .overview {
                     case .overview: overview
                     case .sensors: SensorView(model: model)
-                    case .fans: ContentUnavailableView("No fan data", systemImage: "fan")
+                    case .fans: FanView(model: model)
                     case .history: ContentUnavailableView("No history", systemImage: "chart.xyaxis.line")
                     case .profiles: Text("Automatic cooling · ThermalDeck does not control the fans.")
                     case .compatibility: compatibility
@@ -73,10 +73,17 @@ struct Dashboard: View {
                 MetricTile(title: "GPU peak", value: model.temperature(model.snapshot.peak(.gpu)), icon: "gpu")
                 MetricTile(title: "CPU / GPU peak", value: model.temperature(model.snapshot.peak()), icon: "thermometer.medium")
             }
+            if !model.snapshot.fans.isEmpty {
+                GroupBox("Fan speeds") {
+                    ForEach(model.snapshot.fans) { fan in
+                        LabeledContent(fan.id.name, value: model.rpm(fan.speed.freshValue()))
+                    }
+                }
+            }
             GroupBox {
                 LabeledContent("Monitoring", value: model.snapshot.health.label)
                 Divider()
-                LabeledContent("Cooling profile", value: "Automatic")
+                LabeledContent("ThermalDeck profile", value: "Automatic")
                 if case let .unavailable(reason) = model.snapshot.health {
                     Text(reason).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                 }

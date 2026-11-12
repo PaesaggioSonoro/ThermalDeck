@@ -76,19 +76,67 @@ public actor AppleSMCSource: TelemetrySource {
                                          at: date, sampledAt: started, validity: validity),
                         format: sensor.format)
         }
-        let anyTemperature = temperatures.contains { $0.reading.freshValue() != nil }
+        let fanCount = connection.number("FNum", formats: Self.integerFormats).flatMap(Self.validFanCount)
+        let fans = (0..<(fanCount ?? 0)).map {
+            readFan($0, connection: connection, at: date, started: started, validity: validity)
+        }
+        let freshTemperatures = temperatures.filter { $0.reading.freshValue() != nil }.count
+        let freshFans = fans.filter { $0.speed.freshValue() != nil }.count
         let health: MonitorHealth
-        if anyTemperature {
-            health = temperatures.allSatisfy { $0.reading.freshValue() != nil } ? .live : .partial
-        } else {
-            health = .unavailable("No temperature keys produced a usable reading.")
-            if !sensors.isEmpty {
+        if freshTemperatures == 0 && freshFans == 0 {
+            health = .unavailable("AppleSMC returned no usable mapped temperatures or fan speeds.")
+            if !sensors.isEmpty || !fans.isEmpty {
                 self.connection = nil
                 nextDiscovery = started.advanced(by: .seconds(5))
             }
+        } else if freshTemperatures == 0 || fanCount == nil ||
+                    freshTemperatures != temperatures.count || freshFans != fans.count {
+            health = .partial
+        } else {
+            health = .live
         }
-        return Snapshot(machine: machine, temperatures: temperatures, health: health, timestamp: date)
+        return Snapshot(machine: machine, temperatures: temperatures, fans: fans, fanCount: fanCount,
+                        health: health, timestamp: date)
         #endif
+    }
+
+    private static let integerFormats: Set<String> = ["ui8 ", "ui16", "ui32"]
+    private static let rpmFormats: Set<String> = ["flt ", "fpe2", "ui16"]
+    private static let rpmRange = 0.0...20_000.0
+
+    static func validFanCount(_ value: Double) -> Int? {
+        guard (0...10).contains(value) else { return nil }
+        return Int(exactly: value)
+    }
+
+    private func readFan(
+        _ index: Int, connection: SMCConnection, at date: Date,
+        started: ContinuousClock.Instant, validity: Duration
+    ) -> Fan {
+        let prefix = "F\(index)"
+        func rpm(_ suffix: String) -> Double? {
+            connection.number(prefix + suffix, formats: Self.rpmFormats)
+        }
+        func validRPM(_ suffix: String) -> Double? {
+            guard let value = rpm(suffix), Self.rpmRange.contains(value) else { return nil }
+            return value
+        }
+        let min = validRPM("Mn")
+        let max = validRPM("Mx").flatMap { $0 > 0 ? $0 : nil }
+        let ordered = min.flatMap { lower in max.map { lower <= $0 } } ?? true
+        let modeValue = connection.number(prefix + "Md", formats: Self.integerFormats) ??
+            connection.number(prefix + "md", formats: Self.integerFormats)
+        let mode: FanMode = switch modeValue {
+        case 0: .automatic
+        case 1: .manual
+        case 3: .system
+        default: .unknown
+        }
+
+        return Fan(id: FanID(rawValue: index),
+                   speed: Reading(rpm("Ac"), within: Self.rpmRange, at: date, sampledAt: started, validity: validity),
+                   minimum: ordered ? min : nil, maximum: ordered ? max : nil,
+                   target: validRPM("Tg"), mode: mode)
     }
 
     private func discover(_ connection: SMCConnection) -> [Sensor] {

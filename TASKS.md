@@ -6,8 +6,8 @@
 | TD-01 | Reference review, architecture and hardware boundary | Complete |
 | TD-02 | Launchable native foundation | Complete |
 | TD-03 | Temperature discovery, validation and polling | Complete, partial model mapping |
-| TD-04 | Physical fan monitoring | Next |
-| TD-05 | History, charts and notifications | Pending |
+| TD-04 | Physical fan monitoring | Complete, stopped-state tested |
+| TD-05 | History, charts and notifications | Next |
 | TD-06 | Control feasibility and simulation | Pending |
 | TD-07 | Validated hardware control and helper | Conditional |
 | TD-08 | Profiles and offline curve editing | Pending |
