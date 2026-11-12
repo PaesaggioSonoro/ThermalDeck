@@ -9,3 +9,7 @@ Use Command Line Tools for package compilation and app packaging. Full Xcode is 
 ## Research checkpoint
 
 Pinned reference revisions, ABI assumptions and scope are recorded in docs/hardware/research.md. The architecture uses SwiftUI, SwiftPM, and a C read-only boundary. Control remains disabled. Next action is the launchable native foundation, followed by a hardware probe.
+
+## Native foundation
+
+The ad-hoc-signed SwiftUI bundle built and launched in explicit demo mode. The dashboard showed the simulation label and live CPU/GPU sample values. Two telemetry tests passed. The installed CLT defaults to SDK 27, which exposes a SwiftUI State macro whose plugin is absent. The local Swift wrapper selects the installed SDK 26.5 and the test wrapper locates the Swift Testing plugin. CLT's SwiftBuild emits missing optional developer search-path warnings on this host. Next action is read-only telemetry discovery on Mac16,7.
