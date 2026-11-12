@@ -50,6 +50,25 @@ import ThermalCore
     #expect(MenuBarReadout.highestTemperature.value(in: snapshot, at: now.advanced(by: .seconds(30))) == nil)
 }
 
+@Test func menuBarSecondValueDependsOnTheFirstAndLegacyOrphansMoveToFirst() throws {
+    let fan = MenuBarReadout.fan(FanID(rawValue: 1))
+    var selection = MenuBarSelection()
+    selection.selectSecond(fan)
+    #expect(selection.readouts.isEmpty)
+    selection.selectFirst(.cpuHighest)
+    selection.selectSecond(fan)
+    #expect(selection.readouts == [.cpuHighest, fan])
+    selection.selectFirst(nil)
+    selection.selectFirst(.gpuHighest)
+    #expect(selection.readouts == [.gpuHighest])
+    #expect(selection.second == nil)
+
+    let legacy = try JSONEncoder().encode(["second": fan])
+    let migrated = try JSONDecoder().decode(MenuBarSelection.self, from: legacy)
+    #expect(migrated.first == fan)
+    #expect(migrated.second == nil)
+}
+
 @Test func sharedPercentageCurveConvertsForEachMaximumAndPreservesValidLegacyDrafts() throws {
     let curve = try PercentFanCurve(points: [.init(celsius: 40, percent: 0), .init(celsius: 80, percent: 100)])
     #expect(curve.target(for: 60) == 50)

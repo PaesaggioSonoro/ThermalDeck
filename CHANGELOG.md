@@ -10,7 +10,7 @@
 - CSV and JSON history export, selectable menu bar fan, and dashboard chart visibility.
 - Battery charge, source, charging state, and power flow where supported.
 - A local, reviewable compatibility report.
-- Sensor sorting, optional zone grouping, and per-sensor visibility.
+- Sensor sorting, optional zone grouping, zone icons, and per-sensor visibility.
 - A sidebar Menu Bar page for two live values and a gear next to the Mac model.
 - Half-second dashboard polling and a shared percentage curve preview for both fans.
 - Deterministic fan-control simulation, fault coverage, and local app packaging.
@@ -18,7 +18,7 @@
 ### Fixed
 
 - Preference edits could recurse and terminate the app. Settings now normalize changes before writing them.
-- The menu bar uses a text label when live values are selected.
+- The menu bar keeps a monochrome logo visible alongside live values. Its settings page previews all layouts and requires a first value before a second can be selected.
 
 ### Known limitations
 

@@ -5,7 +5,7 @@ import ThermalCore
 
 @main
 struct ThermalDeckApp: App {
-    @NSApplicationDelegateAdaptor(AlertDelegate.self) private var alertDelegate
+    @NSApplicationDelegateAdaptor(ApplicationDelegate.self) private var appDelegate
     @State private var model = AppModel(source:
         CommandLine.arguments.contains("--demo") ? DemoSource() : AppleSMCSource())
     @Environment(\.openWindow) private var openWindow
@@ -21,6 +21,15 @@ struct ThermalDeckApp: App {
                 .preferredColorScheme(model.preferences.appearance.colorScheme)
                 .frame(minWidth: 680, minHeight: 450)
                 .background(DashboardVisibility(change: model.dashboardVisible))
+                .onAppear {
+                    appDelegate.installMenuBar(model: model, showDashboard: { [openWindow] in
+                        openWindow(id: "dashboard")
+                        NSApp.activate()
+                    }, showSettings: { [openSettings] in
+                        NSApp.activate()
+                        openSettings()
+                    })
+                }
         }
         .defaultSize(width: 1060, height: 730)
         .commands {
@@ -34,31 +43,6 @@ struct ThermalDeckApp: App {
             SettingsView(model: model)
                 .preferredColorScheme(model.preferences.appearance.colorScheme)
                 .frame(width: 530, height: 570)
-        }
-
-        MenuBarExtra {
-            if model.snapshot.simulated { Text("Simulation") }
-            Text(model.snapshot.health.label)
-            ForEach(model.preferences.menuBar.readouts, id: \.self) { readout in
-                Text(readout.label(in: model.snapshot) + "  " + model.menuBarValue(readout))
-            }
-            Divider()
-            Label("Automatic", systemImage: "checkmark")
-            Text("ThermalDeck leaves cooling to macOS.")
-            Button("Open Dashboard", action: showDashboard)
-            Button("Settings…") {
-                openSettings()
-                NSApp.activate()
-            }
-            Divider()
-            Button("Quit " + Self.displayName) { NSApp.terminate(nil) }
-                .keyboardShortcut("q")
-        } label: {
-            if let title = model.menuBarTitle {
-                Text(title).monospacedDigit()
-            } else {
-                Image(systemName: "thermometer.medium").accessibilityLabel(Self.displayName)
-            }
         }
     }
 

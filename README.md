@@ -22,7 +22,7 @@ Open Sensors to sort readings, group by zone, or hide individual rows. Open Fans
 
 ## Cooling and safety
 
-Automatic leaves cooling under macOS control. Manual fan control and live fan curves are disabled. The Custom editor only previews curve behavior with simulated inputs. The target Mac's undocumented control pathway and independent restoration after a control-process failure are unverified. [Fan control feasibility](docs/safety/fan-control.md)
+Automatic leaves cooling under macOS control. Manual fan control and live fan curves are disabled. The Custom editor only previews curve behavior with simulated inputs. Before live control can be enabled, the target Mac needs a verified write path and a verified return to system control on normal quit. Crash recovery is deferred. [Fan control feasibility](docs/safety/fan-control.md)
 
 ThermalDeck is provided as is under the MIT license. Undocumented monitoring interfaces can vary by hardware and OS version. Manual fan control can alter normal cooling and may contribute to higher temperatures, instability, shortened component life, hardware damage or data loss. Use this software at your own risk. ThermalDeck has no affiliation with Apple.
 

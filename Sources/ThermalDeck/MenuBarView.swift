@@ -2,31 +2,43 @@ import SwiftUI
 import ThermalCore
 
 struct MenuBarView: View {
-    @Bindable var model: AppModel
+    let model: AppModel
 
     var body: some View {
-        GroupBox("Values") {
-            VStack(alignment: .leading, spacing: 14) {
-                picker("First value", selection: $model.preferences.menuBar.first,
-                       excluding: model.preferences.menuBar.second)
-                picker("Second value", selection: $model.preferences.menuBar.second,
-                       excluding: model.preferences.menuBar.first)
-            }
-            .padding(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-
-        GroupBox("Preview") {
+        let selection = model.preferences.menuBar
+        let values = model.menuBarValues
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Menu Bar Preview").font(.headline)
             HStack {
-                if let text = model.menuBarTitle {
-                    Text(text).monospacedDigit()
-                } else {
-                    Label("Icon only", systemImage: "thermometer.medium")
-                }
+                Spacer()
+                Image(nsImage: MenuBarArtwork.image(values: values))
+                    .renderingMode(.template)
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+                    .background(.background, in: Capsule())
+                    .overlay { Capsule().strokeBorder(.quaternary) }
+                    .accessibilityLabel(Text((["ThermalDeck logo"] + values).joined(separator: ", ")))
                 Spacer()
             }
-            .padding(8)
+            .frame(height: 70)
+            .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
         }
+
+        VStack(alignment: .leading, spacing: 0) {
+            valueRow("First value", selection: Binding(
+                get: { model.preferences.menuBar.first },
+                set: { model.preferences.menuBar.selectFirst($0) }
+            ), excluding: selection.second)
+            Divider()
+            valueRow("Second value", selection: Binding(
+                get: { model.preferences.menuBar.second },
+                set: { model.preferences.menuBar.selectSecond($0) }
+            ), excluding: selection.first, enabled: selection.first != nil)
+        }
+        .padding(.horizontal, 16)
+        .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
+        .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary) }
     }
 
     private var options: [MenuBarReadout] {
@@ -35,18 +47,32 @@ struct MenuBarView: View {
             + model.snapshot.fans.map { .fan($0.id) }
     }
 
-    private func picker(
-        _ title: String, selection: Binding<MenuBarReadout?>, excluding other: MenuBarReadout?
+    private func valueRow(
+        _ title: String, selection: Binding<MenuBarReadout?>, excluding other: MenuBarReadout?, enabled: Bool = true
     ) -> some View {
         let available = options
-        return Picker(title, selection: selection) {
-            Text("None").tag(nil as MenuBarReadout?)
-            if let saved = selection.wrappedValue, !available.contains(saved) {
-                Text(saved.label(in: model.snapshot)).tag(Optional(saved))
+        return HStack(alignment: .firstTextBaseline, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).fontWeight(.medium)
+                if !enabled {
+                    Text("Choose a first value to enable this slot.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
-            ForEach(available.filter { $0 != other || $0 == selection.wrappedValue }, id: \.self) { option in
-                Text(option.label(in: model.snapshot)).tag(Optional(option))
+            Spacer(minLength: 8)
+            Picker(title, selection: selection) {
+                Text("None").tag(nil as MenuBarReadout?)
+                if let saved = selection.wrappedValue, !available.contains(saved) {
+                    Text(saved.label(in: model.snapshot)).tag(Optional(saved))
+                }
+                ForEach(available.filter { $0 != other }, id: \.self) { option in
+                    Text(option.label(in: model.snapshot)).tag(Optional(option))
+                }
             }
+            .labelsHidden()
+            .frame(maxWidth: 255)
+            .disabled(!enabled)
         }
+        .padding(.vertical, 13)
     }
 }

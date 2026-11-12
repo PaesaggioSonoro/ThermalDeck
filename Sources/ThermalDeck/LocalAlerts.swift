@@ -35,16 +35,3 @@ enum LocalAlerts {
         }
     }
 }
-
-@MainActor
-final class AlertDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        UNUserNotificationCenter.current().delegate = self
-    }
-
-    nonisolated func userNotificationCenter(
-        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .list]
-    }
-}

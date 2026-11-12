@@ -6,7 +6,7 @@ On supported Macs, Overview also shows the internal battery's charge level, powe
 
 History records mapped peaks and measured fan speeds. Enable Battery or Targets in History to show those series. Change the time range and retention in Settings. Missing samples create chart gaps. History is in memory by default. Opt in to save a bounded five-second aggregate across launches. Use Clear History to remove current and saved data. Disabling saved history also removes the local archive. Collection can remain on independently. The archive is periodically checkpointed, so the most recent samples can be lost on exit.
 
-Choose Menu Bar in the sidebar to show up to two live values. Each slot can show a specific sensor, the highest mapped temperature, the highest CPU or GPU temperature, or a fan speed. Select None in both slots for an icon. macOS decides which status items fit in the available space.
+Choose Menu Bar in the sidebar to show up to two live values. Each slot can show a specific sensor, the highest mapped temperature, the highest CPU or GPU temperature, or a fan speed. The monochrome logo appears to the left of one reading and between two readings. Select None for the first value to clear both readings and show the logo by itself. macOS decides which status items fit in the available space.
 
 Open Settings with the gear beside the Mac model to choose Celsius or Fahrenheit and a dashboard interval. A visible, active dashboard can poll every 0.5 seconds. Background polling uses an interval of at least 1 second. Local alerts require opt-in and macOS notification permission. A high-temperature notification threshold is a personal setting. Alert policy uses the available mapped CPU/GPU peak, a cooldown and hysteresis.
 

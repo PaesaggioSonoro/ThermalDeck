@@ -44,6 +44,7 @@ struct SensorView: View {
     private func sensorRow(_ sensor: Temperature) -> some View {
         let temperature = sensor.reading.freshValue()
         return HStack(spacing: 12) {
+            sensorIcon(sensor.group)
             VStack(alignment: .leading, spacing: 3) {
                 Text(sensor.label)
                 if sensor.label != sensor.id.rawValue {
@@ -83,7 +84,10 @@ struct SensorView: View {
                                 }
                             }
                         )) {
-                            Text(sensor.label == sensor.id.rawValue ? sensor.label : "\(sensor.label) (\(sensor.id.rawValue))")
+                            HStack(spacing: 6) {
+                                sensorIcon(sensor.group)
+                                Text(sensor.label == sensor.id.rawValue ? sensor.label : "\(sensor.label) (\(sensor.id.rawValue))")
+                            }
                         }
                     }
                 }
@@ -93,5 +97,19 @@ struct SensorView: View {
         }
         .padding()
         .frame(width: 330)
+    }
+
+    private func sensorIcon(_ group: SensorGroup) -> some View {
+        let symbol: String = switch group {
+        case .cpu: "cpu"
+        case .gpu: "display"
+        case .battery: "battery.75percent"
+        case .memory: "memorychip"
+        case .other: "thermometer.medium"
+        }
+        return Image(systemName: symbol)
+            .foregroundStyle(.secondary)
+            .frame(width: 20)
+            .accessibilityHidden(true)
     }
 }

@@ -34,15 +34,33 @@ public enum MenuBarReadout: Hashable, Codable, Sendable {
 }
 
 public struct MenuBarSelection: Codable, Equatable, Sendable {
-    public var first: MenuBarReadout?
-    public var second: MenuBarReadout?
+    public private(set) var first: MenuBarReadout?
+    public private(set) var second: MenuBarReadout?
 
     public init(first: MenuBarReadout? = nil, second: MenuBarReadout? = nil) {
-        self.first = first
-        self.second = second
+        self.first = first ?? second
+        self.second = first != nil && second != first ? second : nil
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(first: try container.decodeIfPresent(MenuBarReadout.self, forKey: .first),
+                  second: try container.decodeIfPresent(MenuBarReadout.self, forKey: .second))
+    }
+
+    public mutating func selectFirst(_ readout: MenuBarReadout?) {
+        first = readout
+        if readout == nil || readout == second { second = nil }
+    }
+
+    public mutating func selectSecond(_ readout: MenuBarReadout?) {
+        guard let first, readout != first else { return }
+        second = readout
     }
 
     public var readouts: [MenuBarReadout] {
-        [first, second == first ? nil : second].compactMap { $0 }
+        [first, second].compactMap { $0 }
     }
+
+    private enum CodingKeys: String, CodingKey { case first, second }
 }

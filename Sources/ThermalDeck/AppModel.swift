@@ -154,10 +154,8 @@ final class AppModel {
         return value.formatted(.number.precision(.fractionLength(0))) + " RPM"
     }
 
-    var menuBarTitle: String? {
-        let readouts = preferences.menuBar.readouts
-        guard !readouts.isEmpty else { return nil }
-        return readouts.map(menuBarValue).joined(separator: " · ")
+    var menuBarValues: [String] {
+        preferences.menuBar.readouts.map(menuBarValue)
     }
 
     func menuBarValue(_ readout: MenuBarReadout) -> String {
