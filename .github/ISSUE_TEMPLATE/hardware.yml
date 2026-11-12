@@ -1,0 +1,23 @@
+name: Hardware telemetry
+description: Report a missing or implausible reading
+title: "[Hardware] "
+body:
+  - type: input
+    id: platform
+    attributes:
+      label: Model identifier, chip, macOS version and build
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: ThermalDeck version or commit
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Read-only evidence and expected behavior
+      description: Include the relevant sensor or fan key. Exclude serial numbers, user paths, private logs and credentials. Follow SECURITY.md for vulnerabilities.
+    validations:
+      required: true

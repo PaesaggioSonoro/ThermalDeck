@@ -8,3 +8,5 @@
 6. Measure reliability and performance, then prepare offline advanced features and release documentation (TD-10–12).
 
 See TASKS.md and STATUS.md for current progress.
+
+The local monitoring path is implemented. Release gates are listed in [distribution](docs/releases/distribution.md). Hardware control remains conditional on the [control feasibility requirements](docs/safety/fan-control.md). Additional power data, optional update checks, and opt-in diagnostics are deferred.

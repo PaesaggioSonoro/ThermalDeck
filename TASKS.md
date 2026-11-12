@@ -14,4 +14,4 @@
 | TD-09 | UI and integration | Complete, local smoke tested |
 | TD-10 | Reliability and performance | Complete, physical sleep/wake unverified |
 | TD-11 | Optional advanced features | Export and display options complete |
-| TD-12 | Local release preparation | Next |
+| TD-12 | Local release preparation | Complete, distribution gates pending |

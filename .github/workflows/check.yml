@@ -1,0 +1,23 @@
+name: macOS checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Swift tests
+        run: Scripts/test.sh
+      - name: Verify the local app bundle
+        run: |
+          app="$(Scripts/build-app.sh)"
+          plutil -lint "$app/Contents/Info.plist"
+          codesign --verify --strict "$app"
+      - name: Build the shared Xcode scheme
+        run: xcodebuild -project ThermalDeck.xcodeproj -scheme ThermalDeck -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build
