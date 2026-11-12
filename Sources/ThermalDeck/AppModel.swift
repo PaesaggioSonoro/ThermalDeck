@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import ControlSimulation
 import Foundation
 import Observation
 import OSLog
@@ -28,6 +29,7 @@ final class AppModel {
     private(set) var history = HistoryBuffer()
     private(set) var preferencesNotice: String?
     private(set) var historyNotice: String?
+    private(set) var demoCooling: DemoCooling?
 
     private var storedPreferences: Preferences
 
@@ -64,6 +66,7 @@ final class AppModel {
          workspace: NotificationCenter = NSWorkspace.shared.notificationCenter) {
         self.source = source
         self.defaults = defaults
+        demoCooling = source is DemoSource ? DemoCooling() : nil
         snapshot = Snapshot(machine: source.machine, health: .waiting, simulated: source.simulated)
         if !source.simulated, let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
             let folder = Bundle.main.bundleIdentifier ?? "org.thermaldeck.local"
@@ -122,6 +125,7 @@ final class AppModel {
 
     private func suspend() {
         sleeping = true
+        demoCooling?.suspend()
         polling?.cancel()
         expiryCheck?.cancel()
         revision += 1
@@ -158,6 +162,32 @@ final class AppModel {
         preferences.menuBar.readouts.map(menuBarValue)
     }
 
+    var coolingLabel: String {
+        guard let demoCooling else { return "Automatic" }
+        return demoCooling.applying ? "Applying " + demoCooling.mode.rawValue + "…" : demoCooling.mode.rawValue
+    }
+
+    func toggleMaximumFans() {
+        demoCooling?.toggleMaximum()
+        showDemoFanState()
+    }
+
+    func activateDemoCurve() {
+        guard let curve = preferences.storedPercentCurve else { return }
+        demoCooling?.activateCustom(curve)
+        showDemoFanState()
+    }
+
+    func restoreAutomaticCooling() {
+        demoCooling?.restoreAutomatic()
+        showDemoFanState()
+    }
+
+    private func showDemoFanState() {
+        guard snapshot.health == .live || snapshot.health == .partial else { return }
+        if let presented = demoCooling?.presentedSnapshot() { snapshot = presented }
+    }
+
     func menuBarValue(_ readout: MenuBarReadout) -> String {
         let value = readout.value(in: snapshot)
         if case .fan = readout { return rpm(value) }
@@ -167,6 +197,7 @@ final class AppModel {
 
     private func accept(_ sample: Snapshot, expires: ContinuousClock.Instant) {
         let now = ContinuousClock.now
+        let sample = demoCooling?.update(sample, at: now) ?? sample
         if snapshot.health != sample.health {
             Self.log.info("Monitoring state: \(sample.health.label, privacy: .public)")
         }
@@ -190,10 +221,12 @@ final class AppModel {
                 do {
                     try await ContinuousClock().sleep(until: sampleExpiry, tolerance: .milliseconds(50))
                     guard let self else { return }
-                    self.snapshot = Snapshot(machine: sample.machine, temperatures: sample.temperatures, fans: sample.fans,
-                                             fanCount: sample.fanCount,
+                    self.restoreAutomaticCooling()
+                    let last = self.snapshot
+                    self.snapshot = Snapshot(machine: last.machine, temperatures: last.temperatures, fans: last.fans,
+                                             fanCount: last.fanCount,
                                              health: .unavailable("The latest measurements expired."),
-                                             simulated: sample.simulated)
+                                             simulated: last.simulated)
                     self.evaluateAlerts()
                     try await ContinuousClock().sleep(for: .seconds(12))
                     self.evaluateAlerts()

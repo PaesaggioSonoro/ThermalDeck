@@ -20,6 +20,7 @@ struct SimulatedCoordinator {
     private enum Request {
         case rpm([FanID: Double], curve: FanCurve?)
         case sharedCurve(PercentFanCurve)
+        case maximum
     }
 
     var backend: SimulatedBackend
@@ -49,6 +50,10 @@ struct SimulatedCoordinator {
         sharedCurve: PercentFanCurve, temperatures: [SensorID: Input], at now: Duration
     ) -> Bool {
         start(.sharedCurve(sharedCurve), temperatures: temperatures, at: now)
+    }
+
+    mutating func startMaximum(temperatures: [SensorID: Input], at now: Duration) -> Bool {
+        start(.maximum, temperatures: temperatures, at: now)
     }
 
     private mutating func start(
@@ -96,6 +101,9 @@ struct SimulatedCoordinator {
                 Dictionary(uniqueKeysWithValues: targets.keys.map { ($0, value) })
             } ?? [:]
             return (targets, curves)
+        case .maximum:
+            guard fans.count == 2 else { return nil }
+            return (fans.mapValues { $0.limits.upperBound }, [:])
         case .sharedCurve(let shared):
             guard fans.count == 2 else { return nil }
             var targets: [FanID: Double] = [:]

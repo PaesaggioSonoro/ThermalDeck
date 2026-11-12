@@ -24,8 +24,10 @@ struct FanView: View {
                 }
             }
         }
-        Label("ThermalDeck fan control is unavailable on this build.", systemImage: "lock")
-            .font(.callout).foregroundStyle(.secondary)
+        if model.demoCooling == nil {
+            Label("Fan control is unavailable on this Mac.", systemImage: "lock")
+                .font(.callout).foregroundStyle(.secondary)
+        }
     }
 
     private func readout(_ title: String, _ value: String) -> some View {

@@ -8,7 +8,13 @@ struct ProfilesView: View {
 
     var body: some View {
         GroupBox("Cooling profiles") {
-            row("Automatic", "Active", detail: "ThermalDeck leaves cooling to the system.", icon: "checkmark.circle.fill")
+            HStack {
+                row("Automatic", model.demoCooling == nil || model.demoCooling?.mode == .automatic ? "Active" : "",
+                    detail: "Leave cooling to the system.", icon: "checkmark.circle.fill")
+                if let cooling = model.demoCooling, cooling.mode != .automatic {
+                    Button("Use Automatic", action: model.restoreAutomaticCooling)
+                }
+            }
             Divider()
             row("Quiet", "Unavailable", detail: "Safe quieter-than-system behavior has not been verified.", icon: "lock")
             Divider()
@@ -17,8 +23,16 @@ struct ProfilesView: View {
             row("Performance", "Unavailable", detail: "Requires a verified control pathway.", icon: "lock")
             Divider()
             HStack(alignment: .center) {
-                row("Custom", "Offline preview", detail: "Design a curve with simulated inputs.", icon: "chart.xyaxis.line")
+                row("Custom", model.demoCooling?.mode == .custom ? "Active in Demo" : "Offline preview",
+                    detail: "Design a curve with simulated inputs.", icon: "chart.xyaxis.line")
+                if let cooling = model.demoCooling {
+                    Button("Run Saved Curve in Demo", action: model.activateDemoCurve)
+                        .disabled(model.preferences.storedPercentCurve == nil || !cooling.canStart())
+                }
                 Button(editing ? "Hide Editor" : "Edit Curve…") { editing.toggle() }
+            }
+            if let notice = model.demoCooling?.notice {
+                Text(notice).font(.caption).foregroundStyle(.secondary)
             }
         }
         if editing { CurveEditor(model: model) }
@@ -71,7 +85,9 @@ private struct CurveEditor: View {
             legacyNotice = nil
         }
         let initial = (saved ?? converted)?.points ?? [
-            .init(celsius: 45, percent: 30), .init(celsius: 65, percent: 50), .init(celsius: 85, percent: 85)
+            .init(celsius: 45, percent: model.demoCooling == nil ? 30 : 50),
+            .init(celsius: 65, percent: model.demoCooling == nil ? 50 : 65),
+            .init(celsius: 85, percent: 85)
         ]
         _draft = State(initialValue: initial.map { DraftPoint(value: $0) })
     }

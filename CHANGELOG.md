@@ -14,11 +14,13 @@
 - A sidebar Menu Bar page for two live values and a gear next to the Mac model.
 - Half-second dashboard polling and a shared percentage curve preview for both fans.
 - Deterministic fan-control simulation, fault coverage, and local app packaging.
+- An Overview Max Fans toggle and saved curve activation in Demo mode. Turning off Max Fans restores the prior demo cooling mode.
 
 ### Fixed
 
 - Preference edits could recurse and terminate the app. Settings now normalize changes before writing them.
 - The menu bar keeps a monochrome logo visible alongside live values. Its settings page previews all layouts and requires a first value before a second can be selected.
+- The two Menu Bar selectors sit side by side.
 
 ### Known limitations
 

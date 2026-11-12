@@ -19,16 +19,43 @@ import ThermalCore
     #expect(model.snapshot.health == .live)
 }
 
+@MainActor @Test func demoFanOverrideReachesBothLiveReadoutsAndDoesNotResumeAfterWake() async throws {
+    let workspace = NotificationCenter()
+    let model = AppModel(source: DemoSource(), workspace: workspace)
+    model.preferences.interval = 0.5
+    model.dashboardVisible(true)
+    try await waitForSnapshot(model) { $0.fans.count == 2 }
+
+    model.toggleMaximumFans()
+    try await waitForSnapshot(model, timeout: .seconds(5)) { snapshot in
+        snapshot.fans.count == 2 && snapshot.fans.allSatisfy {
+            $0.mode == .manual && $0.speed.freshValue() == $0.maximum
+        }
+    }
+    #expect(model.coolingLabel == "Maximum")
+    model.toggleMaximumFans()
+    #expect(model.coolingLabel == "Automatic")
+    #expect(model.snapshot.fans.map(\.mode) == [.system, .system])
+
+    model.toggleMaximumFans()
+    workspace.post(name: NSWorkspace.willSleepNotification, object: nil)
+    try await waitForSnapshot(model) { $0.health == .paused }
+    workspace.post(name: NSWorkspace.didWakeNotification, object: nil)
+    try await waitForSnapshot(model) { $0.fans.count == 2 }
+    #expect(model.coolingLabel == "Automatic")
+    #expect(model.snapshot.fans.map(\.mode) == [.system, .system])
+}
+
 @MainActor
 private func waitForSnapshot(
-    _ model: AppModel, matching predicate: @escaping @Sendable (Snapshot) -> Bool
+    _ model: AppModel, timeout: Duration = .seconds(3), matching predicate: @escaping @Sendable (Snapshot) -> Bool
 ) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
         group.addTask {
             try await observeSnapshots(model, matching: predicate)
         }
         group.addTask {
-            try await Task.sleep(for: .seconds(3))
+            try await Task.sleep(for: timeout)
             throw SnapshotTimeout()
         }
         defer { group.cancelAll() }

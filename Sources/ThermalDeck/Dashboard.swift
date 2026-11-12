@@ -113,6 +113,7 @@ struct Dashboard: View {
                     }
                 }
             }
+            cooling
             if model.preferences.collectHistory && model.preferences.showOverviewChart != false {
                 let end = model.snapshot.timestamp
                 let start = end.addingTimeInterval(-300)
@@ -136,17 +137,38 @@ struct Dashboard: View {
                     }
                 }
             }
-            GroupBox {
+        }
+    }
+
+    private var cooling: some View {
+        let previousMode = model.demoCooling?.previousMode
+        let canToggle = previousMode != nil || model.demoCooling?.canStart() == true
+        let title = previousMode.map { "Restore " + $0.rawValue } ?? "Max Fans"
+        return GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Label("Cooling", systemImage: "checkmark.circle").foregroundStyle(.secondary)
+                    Label("Cooling", systemImage: "fan").foregroundStyle(.secondary)
+                    Text(model.coolingLabel).fontWeight(.medium)
                     Spacer()
-                    Text("Automatic").fontWeight(.medium)
+                    Button(action: model.toggleMaximumFans) {
+                        Label(title, systemImage: previousMode == nil ? "fan.fill" : "arrow.uturn.backward")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!canToggle)
+                    .help(previousMode == nil ? "Set both fans to their own maximum speeds" : title)
                 }
-                .accessibilityElement(children: .combine)
+                if model.demoCooling == nil {
+                    Text("Fan control is unavailable on this Mac.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if let notice = model.demoCooling?.notice {
+                    Text(notice).font(.caption).foregroundStyle(.secondary)
+                }
                 if case let .unavailable(reason) = model.snapshot.health {
-                    Text(reason).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                    Text(reason).font(.caption).foregroundStyle(.secondary)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -173,7 +195,7 @@ struct Dashboard: View {
             LabeledContent("Fans reported", value: model.snapshot.fanCount?.formatted() ?? "Unavailable")
             Divider()
             LabeledContent("Fan control", value: "Unavailable")
-            Text("Independent restoration after a control-process failure has not been verified.")
+            Text("The fan write path and return to system control on normal quit have not been verified.")
                 .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
             Button("Review Compatibility Report…") {
                 compatibilityReport = CompatibilityReport(

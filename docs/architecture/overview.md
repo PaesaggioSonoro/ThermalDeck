@@ -18,4 +18,4 @@ Dates support presentation and history. Use a monotonic clock for sampling deadl
 
 Potential XPC control is a separate future design. See the ADRs and hardware research for constraints.
 
-The test-only ControlSimulation module models authorization, trusted inputs, leases, bounded targets and restoration. See [fan control feasibility](../safety/fan-control.md) for the state diagram and release gate.
+The in-memory ControlSimulation module models authorization, trusted inputs, leases, bounded targets and restoration in tests and explicit Demo sessions. It never connects to hardware. See [fan control feasibility](../safety/fan-control.md) for the state diagram and release gate.

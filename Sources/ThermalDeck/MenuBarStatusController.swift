@@ -43,7 +43,7 @@ final class MenuBarStatusController: NSObject, NSMenuDelegate {
             addInformation(readout.label(in: model.snapshot) + "  " + model.menuBarValue(readout), to: menu)
         }
         menu.addItem(.separator())
-        addInformation("Cooling: Automatic", to: menu)
+        addInformation("Cooling: " + model.coolingLabel, to: menu)
         addCommand("Open Dashboard", action: #selector(openDashboard), to: menu)
         addCommand("Settings…", action: #selector(openSettings), to: menu)
         menu.addItem(.separator())

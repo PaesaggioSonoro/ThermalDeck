@@ -6,7 +6,7 @@ Manual and curve control remain disabled on Mac16,7/M4 Pro with macOS 26.6.2. Th
 
 The follow-up comparison used the installed Macs Fan Control window as a second RPM display while the system controlled the fans. Read-only SMC checks on the same Mac returned `F0Md = 3`, `F1Md = 3`, and `Ftst = 0`. The lowercase mode keys were absent. The vendor reports M3/M4 control support without publishing the write and restoration contract. [Macs Fan Control implementation discussion](https://github.com/crystalidea/macs-fan-control/issues/822) · [SMC research](https://github.com/agoodkind/macos-smc-fan/blob/31a1feae0c4999ebd8cdddfbd90d2c98182091b8/docs/research.md)
 
-No real write test is proposed while those prerequisites are open. ThermalDeck has no write selector, service, privilege escalation, diagnostic override, or path from the app into the simulator. No real fan command or thermal stress was performed.
+No real write test is proposed while those prerequisites are open. ThermalDeck has no write selector, service, privilege escalation, or diagnostic override. The vendor's [documented command line](https://crystalidea.com/macs-fan-control/command-line) does not expose a fan control command. No real fan command or thermal stress was performed.
 
 ## State and restoration
 
@@ -29,7 +29,7 @@ stateDiagram-v2
 
 The simulated supervisor stops sending targets after stale, missing, invalid or future-dated inputs, read or write errors, mode/target divergence, changing capabilities, authority loss, or a missed lease deadline. It restores all owned fans and verifies readback. A competing controller's fan is reported as unconfirmed. A switch while settling triggers restoration and requires a fresh request. Wake never replays the previous profile.
 
-The simulator can apply one percentage curve to exactly two fans, converting each point using that fan's reported maximum. The curve editor's 0% endpoint represents 0 RPM. The simulator still requires each resulting target to meet the model's minimum and the current system cooling demand.
+The simulator can apply one percentage curve to exactly two fans, converting each point using that fan's reported maximum. The curve editor's 0% endpoint represents 0 RPM. The simulator still requires each resulting target to meet the model's minimum and the current system cooling demand. In explicit Demo mode, Max Fans temporarily selects each fan's maximum. Turning it off restores the prior mode; if a prior curve is no longer safe, it falls back to Automatic. Normal Quit clears the override and selects Automatic directly.
 
 ## Prospective privilege and threat model
 

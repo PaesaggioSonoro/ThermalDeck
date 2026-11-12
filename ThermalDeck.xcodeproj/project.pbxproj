@@ -9,6 +9,7 @@
 		A10000000000000000000001 /* ThermalCore in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000000E; };
 		A10000000000000000000002 /* HardwareAccess in Frameworks */ = {isa = PBXBuildFile; productRef = A1000000000000000000000F; };
 		A10000000000000000000003 /* ThermalDeck.icns in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005; };
+		A10000000000000000000018 /* ControlSimulation in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000019; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,7 +26,7 @@
 		A10000000000000000000008 = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A10000000000000000000001, A10000000000000000000002);
+			files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000018);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -48,7 +49,7 @@
 			dependencies = ();
 			fileSystemSynchronizedGroups = (A10000000000000000000007);
 			name = ThermalDeck;
-			packageProductDependencies = (A1000000000000000000000E, A1000000000000000000000F);
+			packageProductDependencies = (A1000000000000000000000E, A1000000000000000000000F, A10000000000000000000019);
 			productName = ThermalDeck;
 			productReference = A10000000000000000000004;
 			productType = "com.apple.product-type.application";
@@ -80,6 +81,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		A1000000000000000000000E = {isa = XCSwiftPackageProductDependency; package = A1000000000000000000000D; productName = ThermalCore; };
 		A1000000000000000000000F = {isa = XCSwiftPackageProductDependency; package = A1000000000000000000000D; productName = HardwareAccess; };
+		A10000000000000000000019 = {isa = XCSwiftPackageProductDependency; package = A1000000000000000000000D; productName = ControlSimulation; };
 /* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXResourcesBuildPhase section */

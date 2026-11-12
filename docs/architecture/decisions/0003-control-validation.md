@@ -1,4 +1,4 @@
-# ADR 0003 — Keep control simulation out of the application
+# ADR 0003 — Keep fan control isolated from hardware
 
 Status: Accepted.
 
@@ -8,8 +8,8 @@ Upstream M4 control approaches rely on an undocumented diagnostic override. The 
 
 ## Decision
 
-Compile a strictly read-only AppleSMC transport. Put simulated control state and backend in the test graph. Share pure curve arithmetic with the offline editor. Reconsider a narrow SMAppService/XPC boundary when the commands, normal-quit restoration, and trusted sensor semantics have been validated. Independent crash recovery is deferred. [Feasibility and threat model](../../safety/fan-control.md)
+Compile a strictly read-only AppleSMC transport. Use the in-memory control backend in tests and the explicitly requested `--demo` session only. The regular launch does not instantiate a controller. Share pure curve arithmetic with the offline editor. Reconsider a narrow SMAppService/XPC boundary when the commands, normal-quit restoration, and trusted sensor semantics have been validated. Independent crash recovery is deferred. [Feasibility and threat model](../../safety/fan-control.md)
 
 ## Consequences
 
-The production app has no privileged service to install, upgrade or remove. Automatic is the only active profile. Simulated tests describe the policy without establishing firmware behavior.
+The app has no privileged service to install, upgrade or remove. Automatic is the only live profile. Demo controls and tests exercise the policy without establishing firmware behavior.
