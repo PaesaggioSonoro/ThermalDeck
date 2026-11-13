@@ -30,6 +30,7 @@ final class AppModel {
     private(set) var preferencesNotice: String?
     private(set) var historyNotice: String?
     private(set) var demoCooling: DemoCooling?
+    let liveCooling: LiveCooling?
 
     private var storedPreferences: Preferences
 
@@ -67,6 +68,7 @@ final class AppModel {
         self.source = source
         self.defaults = defaults
         demoCooling = source is DemoSource ? DemoCooling() : nil
+        liveCooling = source.simulated ? nil : LiveCooling(machine: source.machine)
         snapshot = Snapshot(machine: source.machine, health: .waiting, simulated: source.simulated)
         if !source.simulated, let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
             let folder = Bundle.main.bundleIdentifier ?? "org.thermaldeck.local"
@@ -126,6 +128,7 @@ final class AppModel {
     private func suspend() {
         sleeping = true
         demoCooling?.suspend()
+        if let liveCooling, liveCooling.needsRestoration { Task { await liveCooling.restore() } }
         polling?.cancel()
         expiryCheck?.cancel()
         revision += 1
@@ -163,13 +166,17 @@ final class AppModel {
     }
 
     var coolingLabel: String {
-        guard let demoCooling else { return "Automatic" }
+        guard let demoCooling else { return liveCooling?.coolingLabel ?? "Automatic" }
         return demoCooling.applying ? "Applying " + demoCooling.mode.rawValue + "…" : demoCooling.mode.rawValue
     }
 
     func toggleMaximumFans() {
-        demoCooling?.toggleMaximum()
-        showDemoFanState()
+        if demoCooling != nil {
+            demoCooling?.toggleMaximum()
+            showDemoFanState()
+        } else {
+            liveCooling?.toggle()
+        }
     }
 
     func activateDemoCurve() {
@@ -202,6 +209,7 @@ final class AppModel {
             Self.log.info("Monitoring state: \(sample.health.label, privacy: .public)")
         }
         snapshot = sample
+        liveCooling?.refresh()
         if preferences.collectHistory {
             history.append(HistoryRecord(snapshot: sample, now: now), retention: preferences.retention)
             writeHistoryIfDue(now: now)

@@ -2,7 +2,7 @@
 
 ## Device decision
 
-Manual and curve control remain disabled on Mac16,7/M4 Pro with macOS 26.6.2. There is a documented mechanism for returning the fans to system control. ThermalDeck has yet to validate its own write path and handoff from an active override on this exact Mac. Control-grade sensing for live curves also remains unverified. Independent crash recovery is deferred at the owner's request. Behavior after an abrupt exit is unknown.
+The maximum-only helper targets Mac16,7 with Apple M4 Pro and macOS 26.6.2 build 25G83. It requires matching Apple-issued team signatures for the app and helper and macOS approval of the helper. Its write path and normal-quit handoff still need physical verification. Custom curves remain in Demo pending validation of control-grade sensors and a system cooling floor. Crash recovery is deferred. Behavior after abrupt helper termination is unknown.
 
 The installed Macs Fan Control 1.5.21 app and its root-owned fan-write helper are present. CrystalIDEA reports that M3/M4 MacBook Pro control returned in 1.5.18 and that normal Quit returns all fans to Auto. The vendor does not publish the helper's write or restoration contract, and its [documented command line](https://crystalidea.com/macs-fan-control/command-line) does not expose fan control. [Release notes](https://crystalidea.com/macs-fan-control/release-notes) · [Normal Quit behavior](https://crystalidea.com/macs-fan-control)
 
@@ -10,7 +10,7 @@ Open-source M4 research describes `Ftst` as a force/test flag in the system mana
 
 The read-only probe on this Mac returned `F0Md = 3`, `F1Md = 3`, and `Ftst = 0`. Lowercase mode keys were absent. Raising a fan's minimum would let the system keep choosing the actual speed on hardware that supports it. On this Mac, the metadata for both minimum keys is `0x84`, without the known write bit (`0x40`); the mode and force/test keys returned `0xd0`. Metadata alone cannot prove that any write will be accepted. [Minimum speed behavior on another M4 model](https://github.com/beomwookang/macos-fan-control#what-the-smc-fan-keys-actually-do)
 
-The repository's [development rules](../../AGENTS.md) prohibit diagnostic unlocks and privilege escalation during development. ThermalDeck has no hardware-write selector or privileged service. The next reference observation, if separately authorized, is to record both fans' actual RPM and mode plus `Ftst` during a user-controlled Full Blast followed by a normal Quit in the installed vendor app. That would establish the vendor handoff on this host without testing a ThermalDeck write. No real fan command or thermal stress was performed.
+The [development rules](../../AGENTS.md) prohibit privilege escalation and security changes during development. The local build uses ad hoc signatures, and the helper refuses to run without an Apple-issued team identity and macOS authorization. The recorded hardware checks used only reads.
 
 ## State and restoration
 
@@ -35,14 +35,14 @@ The simulated supervisor stops sending targets after stale, missing, invalid or 
 
 The simulator can apply one percentage curve to exactly two fans, converting each point using that fan's reported maximum. The curve editor's 0% endpoint represents 0 RPM. The simulator still requires each resulting target to meet the model's minimum and the current system cooling demand. In explicit Demo mode, Max Fans temporarily selects each fan's maximum. Turning it off restores the prior mode; if a prior curve is no longer safe, it falls back to Automatic. Normal Quit clears the override and selects Automatic directly.
 
-## Prospective privilege and threat model
+## Live helper
 
-If a defensible pathway emerges, evaluate an embedded, minimally privileged daemon registered through SMAppService with an XPC listener. Validate a designated requirement that pins the intended signing team and app identifier against the connection. Missing or invalid signing identity fails closed. Audit identity, session ownership and authorization must be independent checks. Treat every message as untrusted. Keep the command surface to typed, bounded operations against fixed compatible fans. Reject arbitrary keys, arbitrary filesystem paths, untrusted executables, unknown enum cases, stale requests and concurrent owners.
+The packaged daemon uses Apple's [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice) and XPC. Both endpoints verify the peer's signing team and identifier. The daemon additionally checks the current console user and associates an override with one connection. Its interface accepts status, maximum and automatic. It derives the two RPM values from hardware and accepts neither keys nor RPM values from the app.
 
-A daemon must enforce trusted sensor reads, bounds, command rate limits, and verification. On normal Quit, restore each fan ThermalDeck owns and confirm system mode before terminating. Revoke authority on logout, sleep, shutdown, authorization change, service upgrade/uninstall or competing control. Startup may verify previously unconfirmed state. It must never reapply persisted manual commands. Independent fallback after a crash is a follow-up.
+The helper starts from two fans in system mode with the override clear. It verifies both fans' targets and measured RPM before confirming Maximum. During an override, it checks readback and macOS thermal pressure once a second. Failed activation, lost readback, high thermal pressure and client disconnect request restoration. On normal Quit, the app waits for both fans in system mode with the override clear. If that check fails, Quit is canceled and the user can retry. The app does not persist overrides.
 
-## First hardware write gate
+## Physical verification
 
-Establish independently reviewed command, encoding, privilege, thermal-floor and normal-quit restoration semantics for the exact model and OS. Complete mock fault coverage and record a bounded test and restoration protocol. Obtain explicit user authorization for that test. Verify both applied mode and measured RPM within a bounded settle interval, then verify return of system mode on Quit. Long-duration testing follows after the bounded test succeeds.
+With a signed and approved helper on the supported Mac, start with both fans in Auto and other fan controls inactive. Use Max Fans briefly at idle. Record the two modes, targets and measured RPM. Test Restore Automatic and repeat with normal Quit. Confirm `Ftst = 0`, both modes are `3` and measured RPM follows the system targets as the fans settle. The in-memory tests cover the command sequence, failed spin-up, partial writes, high thermal pressure and a failed restore followed by a retry.
 
 Manual cooling can alter normal thermal behavior and may contribute to higher temperatures, instability, hardware damage or data loss. ThermalDeck uses undocumented read interfaces and is provided as is under the MIT license. Use is at your own risk. ThermalDeck has no affiliation with Apple.

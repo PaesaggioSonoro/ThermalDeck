@@ -24,8 +24,8 @@ struct FanView: View {
                 }
             }
         }
-        if model.demoCooling == nil {
-            Label("Fan control is unavailable on this Mac.", systemImage: "lock")
+        if let message = model.liveCooling?.availability.message {
+            Label(message, systemImage: "lock")
                 .font(.callout).foregroundStyle(.secondary)
         }
     }

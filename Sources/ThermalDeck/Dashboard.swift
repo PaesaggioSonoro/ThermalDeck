@@ -142,8 +142,11 @@ struct Dashboard: View {
 
     private var cooling: some View {
         let previousMode = model.demoCooling?.previousMode
-        let canToggle = previousMode != nil || model.demoCooling?.canStart() == true
-        let title = previousMode.map { "Restore " + $0.rawValue } ?? "Max Fans"
+        let live = model.liveCooling
+        let canToggle = previousMode != nil || model.demoCooling?.canStart() == true || live?.canToggle == true
+        let isRestoring = previousMode != nil || live?.needsRestoration == true
+        let title = previousMode.map { "Restore " + $0.rawValue } ??
+            (isRestoring ? "Restore Automatic" : "Max Fans")
         return GroupBox {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -151,17 +154,22 @@ struct Dashboard: View {
                     Text(model.coolingLabel).fontWeight(.medium)
                     Spacer()
                     Button(action: model.toggleMaximumFans) {
-                        Label(title, systemImage: previousMode == nil ? "fan.fill" : "arrow.uturn.backward")
+                        Label(title, systemImage: isRestoring ? "arrow.uturn.backward" : "fan.fill")
                     }
                     .buttonStyle(.bordered)
                     .disabled(!canToggle)
-                    .help(previousMode == nil ? "Set both fans to their own maximum speeds" : title)
+                    .help(isRestoring ? title : "Set both fans to their own maximum speeds")
                 }
-                if model.demoCooling == nil {
-                    Text("Fan control is unavailable on this Mac.")
-                        .font(.caption).foregroundStyle(.secondary)
+                if let live, let message = live.availability.message {
+                    HStack {
+                        Text(message).font(.caption).foregroundStyle(.secondary)
+                        if live.availability == .needsSetup || live.availability == .needsApproval {
+                            Button(live.availability == .needsApproval ? "Open System Settings" : "Set Up Fan Control",
+                                   action: live.setUp)
+                        }
+                    }
                 }
-                if let notice = model.demoCooling?.notice {
+                if let notice = model.demoCooling?.notice ?? live?.notice {
                     Text(notice).font(.caption).foregroundStyle(.secondary)
                 }
                 if case let .unavailable(reason) = model.snapshot.health {
@@ -194,9 +202,11 @@ struct Dashboard: View {
             LabeledContent("Mapped temperature zones", value: model.snapshot.temperatures.count.formatted())
             LabeledContent("Fans reported", value: model.snapshot.fanCount?.formatted() ?? "Unavailable")
             Divider()
-            LabeledContent("Fan control", value: "Unavailable")
-            Text("The fan write path and return to system control on normal quit have not been verified.")
-                .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+            LabeledContent("Fan control", value: model.liveCooling?.availability == .ready ? model.coolingLabel :
+                           (model.demoCooling == nil ? "Unavailable" : "Demo"))
+            if let message = model.liveCooling?.availability.message {
+                Text(message).font(.callout).foregroundStyle(.secondary)
+            }
             Button("Review Compatibility Report…") {
                 compatibilityReport = CompatibilityReport(
                     snapshot: model.snapshot,

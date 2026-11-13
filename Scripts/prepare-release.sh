@@ -11,8 +11,10 @@ cd "$(dirname "$0")/.."
 staging="$(mktemp -d)"
 trap 'rm -rf "$staging"' EXIT
 app="$(CONFIGURATION=release OUTPUT_DIR="$staging" Scripts/build-app.sh)"
+codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID_IDENTITY" \
+    --identifier "$BUNDLE_IDENTIFIER.fan-control" "$app/Contents/MacOS/thermal-fan-helper"
 codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID_IDENTITY" "$app"
-codesign --verify --strict "$app"
+codesign --verify --deep --strict "$app"
 archive="$staging/submission.zip"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
 xcrun notarytool submit "$archive" --keychain-profile "$NOTARY_PROFILE" --wait --output-format json > "$staging/notary.json"

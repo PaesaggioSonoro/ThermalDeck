@@ -13,6 +13,6 @@ The shell wrappers use the selected developer tools. On the locally tested CLT 2
 
 To use Xcode, open the project and build the shared ThermalDeck scheme. The library modules resolve from the local Swift package. The GUI project was plist-validated locally. Full Xcode validation requires an Xcode installation.
 
-The bundle script accepts CONFIGURATION, DISPLAY_NAME, BUNDLE_IDENTIFIER, and OUTPUT_DIR. The ad-hoc signature is for local builds. For explicitly labeled simulation, use `open -n dist/ThermalDeck.app --args --demo`. Never run the app or read-only probe as root.
+The bundle script accepts CONFIGURATION, DISPLAY_NAME, BUNDLE_IDENTIFIER, and OUTPUT_DIR. It builds and packages the fan helper with an ad hoc signature. Live Max Fans requires matching Apple-issued team signatures for the app and helper, plus macOS approval of the helper. The shared Xcode scheme builds the dashboard for development. Use the bundle script to package the helper. For explicitly labeled simulation, use `open -n dist/ThermalDeck.app --args --demo`. Never run the app or read-only probe as root.
 
 See [compatibility](../hardware/compatibility.md) and [fan safety](../safety/fan-control.md) before recording hardware claims.

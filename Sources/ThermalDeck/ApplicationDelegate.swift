@@ -5,6 +5,7 @@ import UserNotifications
 final class ApplicationDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     private var menuBar: MenuBarStatusController?
     private weak var model: AppModel?
+    private var restoringForQuit = false
 
     func installMenuBar(model: AppModel, showDashboard: @escaping () -> Void, showSettings: @escaping () -> Void) {
         guard menuBar == nil else { return }
@@ -18,7 +19,22 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, UNUserNotifica
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         model?.restoreAutomaticCooling()
-        return .terminateNow
+        guard let cooling = model?.liveCooling, cooling.needsRestoration else { return .terminateNow }
+        guard !restoringForQuit else { return .terminateLater }
+        restoringForQuit = true
+        Task {
+            let restored = await cooling.restore()
+            restoringForQuit = false
+            sender.reply(toApplicationShouldTerminate: restored)
+            if !restored {
+                NSApp.activate()
+                let alert = NSAlert()
+                alert.messageText = "Automatic fan control could not be confirmed."
+                alert.informativeText = "ThermalDeck is still open. Choose Restore Automatic in Overview to retry."
+                alert.runModal()
+            }
+        }
+        return .terminateLater
     }
 
     nonisolated func userNotificationCenter(

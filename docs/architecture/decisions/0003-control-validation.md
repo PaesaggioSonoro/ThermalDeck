@@ -1,6 +1,6 @@
 # ADR 0003 — Keep fan control isolated from hardware
 
-Status: Accepted.
+Status: Superseded by the authenticated maximum-only helper described in [fan control](../../safety/fan-control.md).
 
 ## Context
 

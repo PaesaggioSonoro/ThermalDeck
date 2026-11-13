@@ -15,6 +15,7 @@
 - Half-second dashboard polling and a shared percentage curve preview for both fans.
 - Deterministic fan-control simulation, fault coverage, and local app packaging.
 - An Overview Max Fans toggle and saved curve activation in Demo mode. Turning off Max Fans restores the prior demo cooling mode.
+- A signed helper path for live Max Fans and verified Auto on Quit. Physical validation is pending on Mac16,7 with macOS 26.6.2.
 
 ### Fixed
 
@@ -25,5 +26,5 @@
 ### Known limitations
 
 - M4 Pro zone mappings are partial. Other hardware and macOS versions need validation.
-- Automatic is the only live profile. Manual fan control and automatic curve execution are disabled.
+- Live control is limited to Max Fans and Automatic on the supported Mac with an approved helper. Curves run in Demo.
 - Developer ID distribution, notarization and physical compatibility beyond the recorded host remain pending.

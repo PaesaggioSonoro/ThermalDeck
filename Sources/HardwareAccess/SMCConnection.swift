@@ -52,6 +52,18 @@ final class SMCConnection {
             SMCCodec.numeric(raw.prefix(Int(info.size)), format: info.format)
         }
     }
+
+    func setFanOverride(_ value: Bool) -> Bool {
+        td_smc_set_fan_override(port, value ? 1 : 0) == 0
+    }
+
+    func setFanManual(_ value: Bool, fan: UInt8) -> Bool {
+        td_smc_set_fan_mode(port, fan, value ? 1 : 0) == 0
+    }
+
+    func setFanMaximum(_ rpm: Double, fan: UInt8) -> Bool {
+        td_smc_set_fan_maximum(port, fan, Float(rpm)) == 0
+    }
 }
 
 enum ConnectionError: Error {

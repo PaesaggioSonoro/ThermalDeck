@@ -9,7 +9,7 @@ struct ProfilesView: View {
     var body: some View {
         GroupBox("Cooling profiles") {
             HStack {
-                row("Automatic", model.demoCooling == nil || model.demoCooling?.mode == .automatic ? "Active" : "",
+                row("Automatic", model.demoCooling?.mode == .automatic || model.coolingLabel == "Automatic" ? "Active" : "",
                     detail: "Leave cooling to the system.", icon: "checkmark.circle.fill")
                 if let cooling = model.demoCooling, cooling.mode != .automatic {
                     Button("Use Automatic", action: model.restoreAutomaticCooling)

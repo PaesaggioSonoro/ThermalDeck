@@ -3,7 +3,7 @@
 1. Establish the local workspace and record source and device evidence (TD-00–01).
 2. Ship a native shell and verify temperatures and measured fan RPM on the development Mac (TD-02–04).
 3. Add bounded history, charts and alerts (TD-05).
-4. Test control policy in simulation. A hardware backend is conditional on device evidence, a verified return to system control on normal quit, and authorization (TD-06–07). Crash recovery is deferred.
+4. Verify the signed maximum-only helper on the development Mac, including the return to system control on normal quit (TD-06–07). Crash recovery is deferred.
 5. Complete offline profile editing and the monitoring interface (TD-08–09).
 6. Measure reliability and performance, then prepare offline advanced features and release documentation (TD-10–12).
 

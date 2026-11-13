@@ -22,7 +22,7 @@ Open Sensors to sort readings, group by zone, or hide individual rows. Open Fans
 
 ## Cooling and safety
 
-Automatic leaves cooling under macOS control. Max Fans and running a saved curve are available in the explicit `--demo` session. Before live control can be enabled, the target Mac needs a verified write path and a verified return to system control on normal quit. Crash recovery is deferred. [Fan control feasibility](docs/safety/fan-control.md)
+Automatic leaves cooling under macOS control. Overview's live Max Fans requires a build signed with an Apple-issued team identity and a helper approved by macOS. The helper is implemented for Mac16,7 with M4 Pro on macOS 26.6.2 build 25G83. Physical verification is pending. The ad hoc build can run Max Fans and saved curves in `--demo`. [Fan control](docs/safety/fan-control.md)
 
 ThermalDeck is provided as is under the MIT license. Undocumented monitoring interfaces can vary by hardware and OS version. Manual fan control can alter normal cooling and may contribute to higher temperatures, instability, shortened component life, hardware damage or data loss. Use this software at your own risk. ThermalDeck has no affiliation with Apple.
 
