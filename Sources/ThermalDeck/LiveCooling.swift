@@ -265,7 +265,7 @@ final class LiveCooling {
             }
             Task { [weak self] in
                 // Quit can queue behind spin-up and two bounded restore attempts.
-                try? await Task.sleep(for: .seconds(50))
+                try? await Task.sleep(for: .seconds(65))
                 self?.pending.removeValue(forKey: id)?.resume(returning: .unavailable)
             }
         }

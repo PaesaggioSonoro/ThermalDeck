@@ -12,12 +12,20 @@ private final class FanRegisters: MaximumFanRegisters {
     var remainingIgnoredTargets = 0
     var refuseRelease = false
     var holdMeasuredSpeed = false
+    var manualAvailableAt: ContinuousClock.Instant?
+    var settleDelay: Duration?
+    private var targetWrittenAt: [UInt8: ContinuousClock.Instant] = [:]
     var thermalPressure = false
     var writes = 0
     var time = ContinuousClock.now
 
     func read() -> MaximumFanReadback? {
-        .init(override: flag, fans: modes.indices.map { index in
+        if let settleDelay {
+            for (fan, writtenAt) in targetWrittenAt where writtenAt.duration(to: time) >= settleDelay {
+                actual[Int(fan)] = targets[Int(fan)]
+            }
+        }
+        return .init(override: flag, fans: modes.indices.map { index in
             .init(mode: modes[index], minimum: 1_350, maximum: maxima[index],
                   target: targets[index], actual: actual[index])
         })
@@ -34,6 +42,11 @@ private final class FanRegisters: MaximumFanRegisters {
 
     func setManual(_ enabled: Bool, fan: UInt8) -> Bool {
         writes += 1
+        if enabled, let manualAvailableAt, time < manualAvailableAt {
+            targets = [1_350, 1_458]
+            actual = [1_350, 1_458]
+            return false
+        }
         if enabled && remainingModeRejections > 0 {
             remainingModeRejections -= 1
             return false
@@ -50,7 +63,11 @@ private final class FanRegisters: MaximumFanRegisters {
             return true
         }
         targets[Int(fan)] = rpm
-        if !holdMeasuredSpeed { actual[Int(fan)] = rpm }
+        if settleDelay != nil {
+            targetWrittenAt[fan] = time
+        } else if !holdMeasuredSpeed {
+            actual[Int(fan)] = rpm
+        }
         return true
     }
 
@@ -89,6 +106,18 @@ private final class FanRegisters: MaximumFanRegisters {
     let control = registers.controller()
     #expect(control.start() == .maximum)
     #expect(registers.targets == registers.maxima)
+    #expect(control.restore() == .automatic)
+}
+
+@Test func liveMaximumAllowsFirmwareSpinUpBeforeManualTargets() {
+    let registers = FanRegisters()
+    let began = registers.time
+    registers.manualAvailableAt = began.advanced(by: .seconds(8))
+    registers.settleDelay = .seconds(4)
+    let control = registers.controller()
+    #expect(control.start() == .maximum)
+    #expect(began.duration(to: registers.time) >= .seconds(12))
+    #expect(registers.actual == registers.maxima)
     #expect(control.restore() == .automatic)
 }
 

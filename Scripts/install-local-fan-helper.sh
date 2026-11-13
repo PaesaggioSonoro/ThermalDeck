@@ -94,7 +94,7 @@ plutil -create xml1 "$stage/daemon.plist"
 plutil -insert Label -string "$label" "$stage/daemon.plist"
 plutil -insert ProgramArguments -json "[\"$helper\"]" "$stage/daemon.plist"
 plutil -insert MachServices -json "{\"$label\":true}" "$stage/daemon.plist"
-plutil -insert ExitTimeOut -integer 60 "$stage/daemon.plist"
+plutil -insert ExitTimeOut -integer 65 "$stage/daemon.plist"
 plutil -lint "$stage/identity.plist" "$stage/daemon.plist"
 if [[ "$1" == check ]]; then
     printf '%s\n' 'ThermalDeck.app and its local fan helper passed the install checks.'

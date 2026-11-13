@@ -105,15 +105,13 @@ public final class MaximumFanController {
                   reading.override == 1 && reading.fans.count == 2 && reading.fans.allSatisfy { $0.mode == 0 }
               }) else { return failedStart("Firmware did not yield both fans") }
 
-        for (index, fan) in baseline.fans.enumerated() {
-            let id = UInt8(index)
-            touchedFans.insert(id)
-            guard configureMaximum(fan: id, rpm: fan.maximum) else {
-                return failedStart("Could not confirm manual mode and target for fan \(id + 1)")
-            }
+        let targets = baseline.fans.map(\.maximum)
+        guard configureMaximum(targets: targets) else {
+            return failedStart("Could not confirm both manual fan targets")
         }
-        expected = baseline.fans.map(\.maximum)
+        expected = targets
         guard poll(for: .seconds(12), while: canOverride, until: { atMaximum($0) }) else {
+            logReadback("Fan speed did not settle")
             return failedStart("Both fans did not reach maximum speed")
         }
         return .maximum
@@ -141,28 +139,39 @@ public final class MaximumFanController {
         return .automatic
     }
 
-    private func configureMaximum(fan id: UInt8, rpm: Double) -> Bool {
-        let deadline = now().advanced(by: .seconds(4))
-        var attempts = 0
-        var accepted = false
+    private func configureMaximum(targets: [Double]) -> Bool {
+        // Mode 0 can hold the fans near idle speed for several seconds before
+        // the firmware will accept mode 1. Give both fans the same deadline.
+        let deadline = now().advanced(by: .seconds(18))
         repeat {
             guard canOverride(), let reading = registers.read(), reading.override == 1,
-                  reading.fans.indices.contains(Int(id)) else { return false }
-            let fan = reading.fans[Int(id)]
-            if fan.mode == 1 && abs(fan.target - rpm) <= 1 { return true }
-            if fan.mode == 0 {
-                accepted = registers.setManual(true, fan: id)
-            } else if fan.mode == 1 {
-                accepted = registers.setMaximum(rpm, fan: id)
-            } else {
-                return false
+                  reading.fans.count == targets.count,
+                  zip(reading.fans, targets).allSatisfy({ fan, rpm in
+                      fan.maximum == rpm && (fan.mode == 0 || fan.mode == 1)
+                  }) else { return false }
+            if targetsApplied(reading, targets: targets) { return true }
+
+            for (index, fan) in reading.fans.enumerated() {
+                let id = UInt8(index)
+                let rpm = targets[index]
+                if fan.mode == 0 {
+                    touchedFans.insert(id)
+                    _ = registers.setManual(true, fan: id)
+                } else if touchedFans.contains(id), abs(fan.target - rpm) > 1 {
+                    _ = registers.setMaximum(rpm, fan: id)
+                }
             }
-            attempts += 1
             wait(0.15)
         } while now() < deadline
-        let final = registers.read()?.fans.dropFirst(Int(id)).first
-        Self.log.error("Fan \(id + 1) setup timed out after \(attempts) writes, last accepted: \(accepted), mode: \(final?.mode ?? -1), target: \(final?.target ?? -1)")
+        logReadback("Manual fan targets did not settle")
         return false
+    }
+
+    private func logReadback(_ reason: String) {
+        guard let reading = registers.read() else { return }
+        for (index, fan) in reading.fans.enumerated() {
+            Self.log.error("\(reason, privacy: .public), fan \(index + 1), mode: \(fan.mode), target: \(fan.target), measured: \(fan.actual) RPM")
+        }
     }
 
     private func failedStart(_ reason: String) -> FanControlResult {
@@ -177,11 +186,17 @@ public final class MaximumFanController {
     }
 
     private func atMaximum(_ reading: MaximumFanReadback?) -> Bool {
-        guard let reading, reading.override == 1, expected.count == 2, reading.fans.count == expected.count
-        else { return false }
+        guard let reading, targetsApplied(reading, targets: expected) else { return false }
         return zip(reading.fans, expected).allSatisfy { fan, rpm in
-            fan.mode == 1 && fan.maximum == rpm &&
-                abs(fan.target - rpm) <= 1 && abs(fan.actual - rpm) <= 250
+            abs(fan.actual - rpm) <= 250
+        }
+    }
+
+    private func targetsApplied(_ reading: MaximumFanReadback, targets: [Double]) -> Bool {
+        guard reading.override == 1, targets.count == 2, reading.fans.count == targets.count,
+              touchedFans.count == targets.count else { return false }
+        return zip(reading.fans, targets).allSatisfy { fan, rpm in
+            fan.mode == 1 && fan.maximum == rpm && abs(fan.target - rpm) <= 1
         }
     }
 

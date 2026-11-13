@@ -11,7 +11,8 @@ Open-source M4 research describes `Ftst` as a force/test flag in the system mana
 The read-only probe on this Mac returned `F0Md = 3`, `F1Md = 3`, and `Ftst = 0`. Lowercase mode keys were absent. Raising a fan's minimum would let the system keep choosing the actual speed on hardware that supports it. On this Mac, the metadata for both minimum keys is `0x84`, without the known write bit (`0x40`); the mode and force/test keys returned `0xd0`. Metadata alone cannot prove that any write will be accepted. [Minimum speed behavior on another M4 model](https://github.com/beomwookang/macos-fan-control#what-the-smc-fan-keys-actually-do)
 
 The installer requires a local administrator to authorize the system daemon. The recorded hardware checks used only reads.
-On the first installed build, the helper set `Ftst` and both fans left system mode. The fans did not reach the requested speeds. The helper cleared the override, and an independent probe confirmed `Ftst = 0` and both modes back at `3`. The rebuilt helper retries mode and target writes and checks their readback before waiting for spin-up.
+
+The previous helper timed out after four seconds of rejected mode writes while the first fan still reported mode 0 and a target of 1,350 RPM. A reference run with Macs Fan Control on the same Mac showed both fans in mode 0 at low speed for about eight seconds before both switched to mode 1 with targets of 5,777 RPM. Both measured speeds came within 250 RPM of the target about three seconds later. The updated helper uses a shared 18-second deadline for mode and target readback, followed by a separate 12-second deadline for measured speed. The older helper's rollback and the reference app's normal Quit both returned `Ftst` to 0 and both fan modes to 3.
 
 ## State and restoration
 
