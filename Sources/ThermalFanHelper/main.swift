@@ -135,13 +135,21 @@ private final class Session: NSObject, FanControlService {
     }
 }
 
-guard geteuid() == 0,
-      let signing = FanControlServiceIdentity.current(),
-      signing.identifier.hasSuffix(FanControlServiceIdentity.helperSuffix),
-      let requirement = signing.peerRequirement(identifier:
-        String(signing.identifier.dropLast(FanControlServiceIdentity.helperSuffix.count)))
-else {
-    FileHandle.standardError.write(Data("The fan helper requires macOS service authorization and a signing identity.\n".utf8))
+private func clientRequirement(for signing: FanControlServiceIdentity.SigningIdentity) -> String? {
+    let suffix = FanControlServiceIdentity.helperSuffix
+    guard signing.identifier.hasSuffix(suffix) else { return nil }
+    if signing.team != nil {
+        return signing.peerRequirement(identifier: String(signing.identifier.dropLast(suffix.count)))
+    }
+    guard signing.identifier == FanControlServiceIdentity.localHelper,
+          let install = FanControlServiceIdentity.LocalInstallation.read(),
+          install.helperCDHash == signing.cdHash else { return nil }
+    return FanControlServiceIdentity.exactRequirement(identifier: FanControlServiceIdentity.localApp, cdHash: install.appCDHash)
+}
+
+guard geteuid() == 0, let signing = FanControlServiceIdentity.current(),
+      let requirement = clientRequirement(for: signing) else {
+    FileHandle.standardError.write(Data("The fan helper requires a valid root installation.\n".utf8))
     exit(EX_NOPERM)
 }
 

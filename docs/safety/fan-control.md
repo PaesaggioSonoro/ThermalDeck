@@ -2,7 +2,7 @@
 
 ## Device decision
 
-The maximum-only helper targets Mac16,7 with Apple M4 Pro and macOS 26.6.2 build 25G83. It requires matching Apple-issued team signatures for the app and helper and macOS approval of the helper. Its write path and normal-quit handoff still need physical verification. Custom curves remain in Demo pending validation of control-grade sensors and a system cooling floor. Crash recovery is deferred. Behavior after abrupt helper termination is unknown.
+The maximum-only helper targets Mac16,7 with Apple M4 Pro and macOS 26.6.2 build 25G83. An administrator can install it from an ad hoc local build. Its write path and normal-quit handoff still need physical verification. Custom curves remain in Demo pending validation of control-grade sensors and a system cooling floor. Crash recovery is deferred. Behavior after abrupt helper termination is unknown.
 
 The installed Macs Fan Control 1.5.21 app and its root-owned fan-write helper are present. CrystalIDEA reports that M3/M4 MacBook Pro control returned in 1.5.18 and that normal Quit returns all fans to Auto. The vendor does not publish the helper's write or restoration contract, and its [documented command line](https://crystalidea.com/macs-fan-control/command-line) does not expose fan control. [Release notes](https://crystalidea.com/macs-fan-control/release-notes) · [Normal Quit behavior](https://crystalidea.com/macs-fan-control)
 
@@ -10,7 +10,7 @@ Open-source M4 research describes `Ftst` as a force/test flag in the system mana
 
 The read-only probe on this Mac returned `F0Md = 3`, `F1Md = 3`, and `Ftst = 0`. Lowercase mode keys were absent. Raising a fan's minimum would let the system keep choosing the actual speed on hardware that supports it. On this Mac, the metadata for both minimum keys is `0x84`, without the known write bit (`0x40`); the mode and force/test keys returned `0xd0`. Metadata alone cannot prove that any write will be accepted. [Minimum speed behavior on another M4 model](https://github.com/beomwookang/macos-fan-control#what-the-smc-fan-keys-actually-do)
 
-The [development rules](../../AGENTS.md) prohibit privilege escalation and security changes during development. The local build uses ad hoc signatures, and the helper refuses to run without an Apple-issued team identity and macOS authorization. The recorded hardware checks used only reads.
+The [development rules](../../AGENTS.md) prohibit privilege escalation during agent work. The local install is a separate administrator action. The recorded hardware checks used only reads.
 
 ## State and restoration
 
@@ -37,12 +37,14 @@ The simulator can apply one percentage curve to exactly two fans, converting eac
 
 ## Live helper
 
-The packaged daemon uses Apple's [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice) and XPC. Both endpoints verify the peer's signing team and identifier. The daemon additionally checks the current console user and associates an override with one connection. Its interface accepts status, maximum and automatic. It derives the two RPM values from hardware and accepts neither keys nor RPM values from the app.
+The local installer puts the helper and its identity file under `/Library/PrivilegedHelperTools` and registers it as a system launch daemon. Both endpoints authenticate the peer's identifier and exact code signature hash over XPC. The identity file is owned by root and ties authorization to one app and helper build. Reinstall after a rebuild changes the app's hash. Distribution builds use [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice) with matching signing teams.
+
+The daemon also checks the current console user and associates an override with one connection. Its interface accepts status, maximum and automatic. It derives the two RPM values from hardware and accepts neither keys nor RPM values from the app.
 
 The helper starts from two fans in system mode with the override clear. It verifies both fans' targets and measured RPM before confirming Maximum. During an override, it checks readback and macOS thermal pressure once a second. Failed activation, lost readback, high thermal pressure and client disconnect request restoration. On normal Quit, the app waits for both fans in system mode with the override clear. If that check fails, Quit is canceled and the user can retry. The app does not persist overrides.
 
 ## Physical verification
 
-With a signed and approved helper on the supported Mac, start with both fans in Auto and other fan controls inactive. Use Max Fans briefly at idle. Record the two modes, targets and measured RPM. Test Restore Automatic and repeat with normal Quit. Confirm `Ftst = 0`, both modes are `3` and measured RPM follows the system targets as the fans settle. The in-memory tests cover the command sequence, failed spin-up, partial writes, high thermal pressure and a failed restore followed by a retry.
+With the helper installed on the supported Mac, start with both fans in Auto and other fan controls inactive. Use Max Fans briefly at idle. Record the two modes, targets and measured RPM. Test Restore Automatic and repeat with normal Quit. Confirm `Ftst = 0`, both modes are `3` and measured RPM follows the system targets as the fans settle. The in-memory tests cover the command sequence, failed spin-up, partial writes, high thermal pressure and a failed restore followed by a retry.
 
 Manual cooling can alter normal thermal behavior and may contribute to higher temperatures, instability, hardware damage or data loss. ThermalDeck uses undocumented read interfaces and is provided as is under the MIT license. Use is at your own risk. ThermalDeck has no affiliation with Apple.

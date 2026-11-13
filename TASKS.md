@@ -9,7 +9,7 @@
 | TD-04 | Physical fan monitoring | Complete, stopped and spinning states observed |
 | TD-05 | History, charts and notifications | Complete, policy tested |
 | TD-06 | Control feasibility and simulation | Complete, simulated only |
-| TD-07 | Validated hardware control and helper | Maximum-only helper implemented. Signed install and physical RPM and normal-quit handoff checks pending. |
+| TD-07 | Validated hardware control and helper | Maximum-only helper and ad hoc local installer implemented. Administrator install, physical RPM and normal-quit handoff checks pending. |
 | TD-08 | Profiles and offline curve editing | Complete, simulation only |
 | TD-09 | UI and integration | Complete, local smoke tested |
 | TD-10 | Reliability and performance | Complete, physical sleep/wake unverified |

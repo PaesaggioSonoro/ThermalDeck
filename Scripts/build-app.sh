@@ -32,9 +32,9 @@ plutil -replace Label -string "$service_label" "$service_plist"
 plutil -replace AssociatedBundleIdentifiers.0 -string "$bundle_id" "$service_plist"
 plutil -replace MachServices -json "{\"$service_label\":true}" "$service_plist"
 cp "$bin_dir/thermal-fan-helper" "$bundle/Contents/MacOS/"
-codesign --force --sign - --identifier "$service_label" "$bundle/Contents/MacOS/thermal-fan-helper" >&2
-codesign --force --sign - "$bundle" >&2
-codesign --verify --strict "$bundle"
+codesign --force --options runtime --sign - --identifier "$service_label" "$bundle/Contents/MacOS/thermal-fan-helper" >&2
+codesign --force --options runtime --sign - "$bundle" >&2
+codesign --verify --deep --strict "$bundle"
 destination="$output_dir/ThermalDeck.app"
 if [[ -e "$destination" ]]; then
     mv "$destination" "$staging/previous.app"

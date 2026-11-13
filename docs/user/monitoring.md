@@ -12,7 +12,7 @@ Open Settings with the gear beside the Mac model to choose Celsius or Fahrenheit
 
 Automatic leaves cooling to macOS. The Custom editor previews one percentage curve for both fans using simulated input. For each fan, 0% represents 0 RPM and 100% represents its reported maximum. Earlier RPM drafts can be converted when the two reported maxima match and the draft fits that range. Saved curves are local drafts. The Fans page reports actual firmware mode separately.
 
-On a signed build with the helper approved by macOS, Overview's Max Fans sets both fans to their respective maxima. Click Restore Automatic to return cooling to macOS. Normal Quit waits for the helper to confirm that macOS regained control. If the helper cannot confirm the handoff, the app stays open so you can retry. The live control currently targets the 16-inch M4 Pro MacBook Pro (Mac16,7) on macOS 26.6.2 build 25G83. Physical verification with a signed and approved helper is pending.
+With the [local fan helper installed](../../README.md), Overview's Max Fans sets both fans to their respective maxima. Click Restore Automatic to return cooling to macOS. Normal Quit waits for the helper to confirm that macOS regained control. If the helper cannot confirm the handoff, the app stays open so you can retry. The live control currently targets the 16-inch M4 Pro MacBook Pro (Mac16,7) on macOS 26.6.2 build 25G83. Physical verification is pending.
 
 Run `open -n dist/ThermalDeck.app --args --demo` to try cooling controls with sample data. In Demo, you can also run a saved curve from Profiles. Turning off Max Fans returns to the previous Demo mode, which can be Automatic or a saved curve.
 

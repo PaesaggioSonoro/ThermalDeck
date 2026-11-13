@@ -7,12 +7,14 @@ import ThermalCore
 @MainActor @Observable
 final class LiveCooling {
     enum Availability: Equatable {
-        case unsupported, needsSignedBuild, missingHelper, needsSetup, needsApproval, ready
+        case unsupported, needsSignedBuild, needsLocalInstall, needsLocalUpdate, missingHelper, needsSetup, needsApproval, ready
 
         var message: String? {
             switch self {
             case .unsupported: "Live fan control is unavailable for this Mac or macOS build."
             case .needsSignedBuild: "Live fan control needs a signed ThermalDeck build."
+            case .needsLocalInstall: "Install the local fan helper to use Max Fans."
+            case .needsLocalUpdate: "Reinstall the local fan helper for this ThermalDeck build."
             case .missingHelper: "This build does not include the fan control helper."
             case .needsSetup: "Set up the fan control helper to use Max Fans."
             case .needsApproval: "Approve the fan control helper in System Settings."
@@ -27,7 +29,9 @@ final class LiveCooling {
     private let service: SMAppService
     private let serviceName: String
     private let hasHelper: Bool
-    private let requirement: String?
+    private let signing: FanControlServiceIdentity.SigningIdentity?
+    private let identifier: String
+    private var requirement: String?
     @ObservationIgnored private var connection: NSXPCConnection?
     @ObservationIgnored private var connectionID: UUID?
     @ObservationIgnored private var pending: [UUID: CheckedContinuation<FanControlResult, Never>] = [:]
@@ -44,14 +48,13 @@ final class LiveCooling {
 
     init(machine: Machine) {
         self.machine = machine
-        let identifier = Bundle.main.bundleIdentifier ?? "org.thermaldeck.local"
+        identifier = Bundle.main.bundleIdentifier ?? FanControlServiceIdentity.localApp
         serviceName = identifier + FanControlServiceIdentity.helperSuffix
         service = SMAppService.daemon(plistName: serviceName + ".plist")
         let contents = Bundle.main.bundleURL.appending(path: "Contents")
         hasHelper = FileManager.default.isExecutableFile(atPath: contents.appending(path: "MacOS/thermal-fan-helper").path) &&
             FileManager.default.fileExists(atPath: contents.appending(path: "Library/LaunchDaemons/\(serviceName).plist").path)
-        let signing = FanControlServiceIdentity.current()
-        requirement = signing?.identifier == identifier ? signing?.peerRequirement(identifier: serviceName) : nil
+        signing = FanControlServiceIdentity.current()
         availability = .unsupported
         refreshAvailability()
     }
@@ -158,13 +161,34 @@ final class LiveCooling {
     }
 
     private func refreshAvailability() {
+        let previousRequirement = requirement
+        defer {
+            if previousRequirement != requirement { connection?.invalidate() }
+        }
+        requirement = nil
         if !MaximumFanController.supports(machine) {
             availability = .unsupported
-        } else if requirement == nil {
+        } else if signing?.identifier != identifier {
             availability = .needsSignedBuild
         } else if !hasHelper {
             availability = .missingHelper
+        } else if let signing, signing.team == nil, identifier == FanControlServiceIdentity.localApp {
+            guard let install = FanControlServiceIdentity.LocalInstallation.read() else {
+                availability = .needsLocalInstall
+                return
+            }
+            guard install.appCDHash == signing.cdHash else {
+                availability = .needsLocalUpdate
+                return
+            }
+            requirement = FanControlServiceIdentity.exactRequirement(identifier: serviceName, cdHash: install.helperCDHash)
+            availability = requirement == nil ? .needsLocalInstall : .ready
         } else {
+            requirement = signing?.peerRequirement(identifier: serviceName)
+            guard requirement != nil else {
+                availability = .needsSignedBuild
+                return
+            }
             availability = switch service.status {
             case .enabled: .ready
             case .requiresApproval: .needsApproval
@@ -180,7 +204,9 @@ final class LiveCooling {
         notice = switch result {
         case .failed: "Maximum speed could not be verified. The fans returned to Automatic."
         case .stopped: "The override ended and the fans returned to Automatic."
-        case .unavailable: "The fan control helper could not be reached."
+        case .unavailable: signing?.team == nil
+            ? "The local fan helper could not be reached. Check the installation, then reopen ThermalDeck."
+            : "The fan control helper could not be reached."
         case .unsupported: "The fan control helper could not verify this Mac."
         case .unconfirmed: "System control could not be confirmed. Choose Restore Automatic to retry."
         case .thermalPressure: "Try Max Fans again after macOS thermal pressure drops."
@@ -189,7 +215,7 @@ final class LiveCooling {
     }
 
     private func send(_ command: Command) async -> FanControlResult {
-        guard let requirement, service.status == .enabled else { return .unavailable }
+        guard let requirement, signing?.team == nil || service.status == .enabled else { return .unavailable }
         let link: NSXPCConnection
         if let connection {
             link = connection
