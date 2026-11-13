@@ -87,7 +87,7 @@ static int32_t write_fan_value(uint32_t connection, uint32_t key, uint32_t type,
     if (reply.size != size || reply.type != type || !(reply.attributes & 0x40)) {
         return TD_SMC_BAD_REPLY;
     }
-    Request input = { .key = key, .size = size };
+    Request input = { .key = key, .size = size, .type = type };
     memcpy(input.bytes, bytes, size);
     return invoke(connection, write_bytes, input, &reply);
 }

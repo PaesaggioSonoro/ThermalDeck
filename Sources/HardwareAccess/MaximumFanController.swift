@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import ThermalCore
 
 struct MaximumFanReadback {
@@ -48,6 +49,7 @@ extension SMCConnection: MaximumFanRegisters {
 
 /// Access this controller from one serial queue. No controller state is persisted.
 public final class MaximumFanController {
+    private static let log = Logger(subsystem: "org.thermaldeck.local", category: "fan-control")
     private let registers: any MaximumFanRegisters
     private let wait: (TimeInterval) -> Void
     private let now: () -> ContinuousClock.Instant
@@ -101,19 +103,19 @@ public final class MaximumFanController {
         guard registers.setOverride(true),
               poll(for: .seconds(7), while: canOverride, until: { reading in
                   reading.override == 1 && reading.fans.count == 2 && reading.fans.allSatisfy { $0.mode == 0 }
-              }) else { return failedStart() }
+              }) else { return failedStart("Firmware did not yield both fans") }
 
         for (index, fan) in baseline.fans.enumerated() {
             let id = UInt8(index)
             touchedFans.insert(id)
-            guard registers.setManual(true, fan: id),
-                  poll(for: .seconds(1), while: canOverride,
-                       until: { $0.override == 1 && $0.fans.count == 2 && $0.fans[index].mode == 1 }),
-                  canOverride(),
-                  registers.setMaximum(fan.maximum, fan: id) else { return failedStart() }
+            guard configureMaximum(fan: id, rpm: fan.maximum) else {
+                return failedStart("Could not confirm manual mode and target for fan \(id + 1)")
+            }
         }
         expected = baseline.fans.map(\.maximum)
-        guard poll(for: .seconds(12), while: canOverride, until: { atMaximum($0) }) else { return failedStart() }
+        guard poll(for: .seconds(12), while: canOverride, until: { atMaximum($0) }) else {
+            return failedStart("Both fans did not reach maximum speed")
+        }
         return .maximum
     }
 
@@ -139,8 +141,33 @@ public final class MaximumFanController {
         return .automatic
     }
 
-    private func failedStart() -> FanControlResult {
-        restore() == .automatic ? .failed : .unconfirmed
+    private func configureMaximum(fan id: UInt8, rpm: Double) -> Bool {
+        let deadline = now().advanced(by: .seconds(4))
+        var attempts = 0
+        var accepted = false
+        repeat {
+            guard canOverride(), let reading = registers.read(), reading.override == 1,
+                  reading.fans.indices.contains(Int(id)) else { return false }
+            let fan = reading.fans[Int(id)]
+            if fan.mode == 1 && abs(fan.target - rpm) <= 1 { return true }
+            if fan.mode == 0 {
+                accepted = registers.setManual(true, fan: id)
+            } else if fan.mode == 1 {
+                accepted = registers.setMaximum(rpm, fan: id)
+            } else {
+                return false
+            }
+            attempts += 1
+            wait(0.15)
+        } while now() < deadline
+        let final = registers.read()?.fans.dropFirst(Int(id)).first
+        Self.log.error("Fan \(id + 1) setup timed out after \(attempts) writes, last accepted: \(accepted), mode: \(final?.mode ?? -1), target: \(final?.target ?? -1)")
+        return false
+    }
+
+    private func failedStart(_ reason: String) -> FanControlResult {
+        Self.log.error("\(reason, privacy: .public)")
+        return restore() == .automatic ? .failed : .unconfirmed
     }
 
     private func clearOwnership() {

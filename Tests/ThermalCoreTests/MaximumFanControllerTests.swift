@@ -8,6 +8,8 @@ private final class FanRegisters: MaximumFanRegisters {
     var targets: [Double] = [0, 0]
     let maxima: [Double] = [5_777, 5_600]
     var rejectSecondTarget = false
+    var remainingModeRejections = 0
+    var remainingIgnoredTargets = 0
     var refuseRelease = false
     var holdMeasuredSpeed = false
     var thermalPressure = false
@@ -32,6 +34,10 @@ private final class FanRegisters: MaximumFanRegisters {
 
     func setManual(_ enabled: Bool, fan: UInt8) -> Bool {
         writes += 1
+        if enabled && remainingModeRejections > 0 {
+            remainingModeRejections -= 1
+            return false
+        }
         modes[Int(fan)] = enabled ? 1 : 0
         return true
     }
@@ -39,6 +45,10 @@ private final class FanRegisters: MaximumFanRegisters {
     func setMaximum(_ rpm: Double, fan: UInt8) -> Bool {
         writes += 1
         if fan == 1 && rejectSecondTarget { return false }
+        if remainingIgnoredTargets > 0 {
+            remainingIgnoredTargets -= 1
+            return true
+        }
         targets[Int(fan)] = rpm
         if !holdMeasuredSpeed { actual[Int(fan)] = rpm }
         return true
@@ -70,6 +80,16 @@ private final class FanRegisters: MaximumFanRegisters {
     #expect(control.start() == .external)
     #expect(control.restore() == .external)
     #expect(registers.writes == 0)
+}
+
+@Test func liveMaximumRetriesRejectedModeWritesAndUnappliedTargets() {
+    let registers = FanRegisters()
+    registers.remainingModeRejections = 2
+    registers.remainingIgnoredTargets = 2
+    let control = registers.controller()
+    #expect(control.start() == .maximum)
+    #expect(registers.targets == registers.maxima)
+    #expect(control.restore() == .automatic)
 }
 
 @Test func liveMaximumRollsBackPartialWritesAndKeepsUnconfirmedOwnership() {

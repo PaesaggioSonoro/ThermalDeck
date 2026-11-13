@@ -264,8 +264,8 @@ final class LiveCooling {
             case .automatic: service.automatic(reply: reply)
             }
             Task { [weak self] in
-                // Quit can queue behind a start that is already rolling back.
-                try? await Task.sleep(for: .seconds(45))
+                // Quit can queue behind spin-up and two bounded restore attempts.
+                try? await Task.sleep(for: .seconds(50))
                 self?.pending.removeValue(forKey: id)?.resume(returning: .unavailable)
             }
         }
