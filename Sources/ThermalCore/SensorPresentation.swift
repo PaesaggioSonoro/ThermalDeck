@@ -38,7 +38,7 @@ public struct SensorPresentation: Codable, Equatable, Sendable {
     }
 
     public static func byName(_ left: Temperature, _ right: Temperature) -> Bool {
-        let order = left.label.localizedStandardCompare(right.label)
+        let order = left.displayName.localizedStandardCompare(right.displayName)
         if order != .orderedSame { return order == .orderedAscending }
         return left.id.rawValue < right.id.rawValue
     }

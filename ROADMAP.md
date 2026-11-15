@@ -11,4 +11,4 @@ See TASKS.md and STATUS.md for current progress.
 
 The local monitoring path includes battery charge and power flow where supported. Release gates are listed in [distribution](docs/releases/distribution.md). Hardware control remains conditional on the [control feasibility requirements](docs/safety/fan-control.md). Update checks depend on an established release endpoint.
 
-The monitoring controls follow-up includes cooling shortcuts, individual sensor history and fan control alerts. Exact GPU cluster and battery names require a source that pairs reference labels with firmware keys. Live curves and adjustable fan targets depend on a verified cooling floor and control sensors.
+The monitoring controls include cooling shortcuts, individual sensor history and fan control alerts. M4 Pro discovery covers two firmware banks for ten performance cores and additional HID sensors. Exact mapping for two individual efficiency cores and the reference app's GPU cluster rows remains open. Live curves and adjustable fan targets depend on a verified cooling floor and control sensors.

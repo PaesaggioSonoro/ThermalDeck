@@ -2,6 +2,7 @@
 #define TD_SMC_READ_H
 
 #include <stdint.h>
+#include "HIDTemperatureRead.h"
 
 typedef struct {
     uint32_t size;

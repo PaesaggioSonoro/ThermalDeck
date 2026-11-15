@@ -23,6 +23,8 @@ import ThermalCore
     let snapshot = Snapshot(machine: Machine(model: "Test", chip: "Test", os: "Test"),
                             temperatures: sensors, health: .live)
     #expect(MenuBarReadout.sensor(sensors[2].id).value(in: snapshot) == 75)
+    #expect(MenuBarReadout.sensor(sensors[2].id).label(in: snapshot) == "GPU 1")
+    #expect(MenuBarReadout.sensor(SensorID(rawValue: "Tg1k")).label(in: snapshot) == "Unavailable sensor")
     #expect(MenuBarReadout.cpuHighest.value(in: snapshot) == 50)
 }
 

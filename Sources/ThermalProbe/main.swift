@@ -40,14 +40,17 @@ let started = ContinuousClock.now
 let sample = await source.sample(validity: .seconds(15))
 let elapsed = started.duration(to: .now)
 print("\(sample.machine.model) · \(sample.machine.chip) · \(sample.machine.os)")
-print("\(sample.health.label) · \(sample.temperatures.count) temperature readings or candidates · \(elapsed.formatted())")
+let unclassified = sample.temperatures.count { $0.group == .other }
+let mapped = sample.temperatures.count - unclassified
+print("\(sample.health.label) · \(mapped) named temperature sensors · \(unclassified) unclassified candidates · \(elapsed.formatted())")
 for group in SensorGroup.allCases {
     let values = sample.temperatures.filter { $0.group == group }
     if !values.isEmpty { print(group.rawValue) }
     let format = group == .other ? "%.2f (units unverified)" : "%.2f °C"
     for value in values {
         let reading = value.reading.freshValue().map { String(format: format, $0) } ?? value.reading.health().rawValue
-        print("  \(value.id.rawValue) [\(value.format)] \(reading)")
+        let name = group == .other ? "" : "\(value.displayName) · "
+        print("  \(name)\(value.id.rawValue) [\(value.format)] \(reading)")
     }
 }
 

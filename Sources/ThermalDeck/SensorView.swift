@@ -45,15 +45,8 @@ struct SensorView: View {
         let temperature = sensor.reading.freshValue()
         return HStack(spacing: 12) {
             sensorIcon(sensor.group)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(sensor.label)
-                if sensor.label != sensor.id.rawValue {
-                    Text(sensor.id.rawValue).font(.caption.monospaced()).foregroundStyle(.secondary)
-                }
-            }
+            Text(sensor.displayName)
             Spacer()
-            Text(sensor.format).font(.caption.monospaced()).foregroundStyle(.secondary)
-            Text(sensor.reading.health().rawValue).font(.caption).foregroundStyle(.secondary)
             Text(model.temperature(temperature))
                 .monospacedDigit()
                 .frame(minWidth: 82, alignment: .trailing)
@@ -86,7 +79,7 @@ struct SensorView: View {
                         )) {
                             HStack(spacing: 6) {
                                 sensorIcon(sensor.group)
-                                Text(sensor.label == sensor.id.rawValue ? sensor.label : "\(sensor.label) (\(sensor.id.rawValue))")
+                                Text(sensor.displayName)
                             }
                         }
                     }
@@ -105,6 +98,8 @@ struct SensorView: View {
         case .gpu: "display"
         case .battery: "battery.75percent"
         case .memory: "memorychip"
+        case .storage: "internaldrive"
+        case .system: "desktopcomputer"
         case .other: "thermometer.medium"
         }
         return Image(systemName: symbol)

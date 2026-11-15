@@ -11,6 +11,8 @@ public actor AppleSMCSource: TelemetrySource {
         let group: SensorGroup
         let format: String
         let label: String?
+        let canPark: Bool
+        let alternate: UInt32?
     }
 
     public nonisolated let machine: Machine
@@ -18,20 +20,14 @@ public actor AppleSMCSource: TelemetrySource {
     private let queue = DispatchSerialQueue(label: "ThermalDeck AppleSMC", qos: .utility)
     public nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }
     private let includeUnclassified: Bool
+    private let temperatureCatalog: [String: M4ProTemperatureCatalog.Entry]
     private var connection: SMCConnection?
     private var sensors: [Sensor] = []
+    private var hidTemperatures: HIDTemperatures?
     private var nextDiscovery: ContinuousClock.Instant = .now
     private static let log = Logger(subsystem: "org.thermaldeck.local", category: "hardware")
-    private static let thermalFormats: Set<String> = ["flt ", "sp78"]
+    private static let thermalFormats: Set<String> = ["flt ", "sp78", "ioft"]
     private static let temperatureRange = 5.0...125.0
-    // Tp keys on this model have returned ambient-inconsistent values near 2–4.
-    private static let cpuLabels = ["Te05": "CPU Efficiency Core 1", "Te0S": "CPU Efficiency Core 2"]
-    private static let gpuLabels = [
-        "Tg1U": "GPU Sensor 1", "Tg1k": "GPU Sensor 2", "Tg0K": "GPU Sensor 3", "Tg0L": "GPU Sensor 4",
-        "Tg0d": "GPU Sensor 5", "Tg0e": "GPU Sensor 6", "Tg0j": "GPU Sensor 7", "Tg0k": "GPU Sensor 8"
-    ]
-    private static let batteryLabels = ["TB1T": "Battery 1", "TB2T": "Battery 2"]
-    private static let memoryKeys: Set<String> = ["Tm0p", "Tm1p", "Tm2p"]
 
     public init(includeUnclassified: Bool = false) {
         self.includeUnclassified = includeUnclassified
@@ -43,11 +39,13 @@ public actor AppleSMCSource: TelemetrySource {
             os: "macOS \(version.majorVersion).\(version.minorVersion).\(version.patchVersion)" +
                 (build.map { " (\($0))" } ?? "")
         )
+        temperatureCatalog = M4ProTemperatureCatalog.entries(for: machine)
     }
 
     public func reset() {
         connection = nil
         sensors.removeAll()
+        hidTemperatures = nil
         nextDiscovery = .now
     }
 
@@ -74,30 +72,42 @@ public actor AppleSMCSource: TelemetrySource {
 
         if started >= nextDiscovery {
             sensors = discover(connection)
+            if !temperatureCatalog.isEmpty { hidTemperatures = HIDTemperatures() }
             nextDiscovery = started.advanced(by: .seconds(sensors.isEmpty ? 30 : 300))
             Self.log.info("Discovered \(self.sensors.count, privacy: .public) temperature keys")
         }
 
-        let temperatures = sensors.map { sensor in
-            Temperature(id: sensor.id, label: sensor.label, group: sensor.group,
-                        reading: Reading(connection.number(sensor.key, formats: Self.thermalFormats),
-                                         within: sensor.group == .other ? 1...125 : Self.temperatureRange,
+        let smcTemperatures = sensors.map { sensor in
+            let range = sensor.group == .other ? 1...125 : Self.temperatureRange
+            let primary = connection.number(sensor.key, formats: Self.thermalFormats)
+            let value: Double?
+            if let alternate = sensor.alternate {
+                value = M4ProTemperatureCatalog.Entry.activeValue(primary) ??
+                    M4ProTemperatureCatalog.Entry.activeValue(connection.number(alternate, formats: Self.thermalFormats))
+            } else {
+                value = primary
+            }
+            return Temperature(id: sensor.id, label: sensor.label, group: sensor.group,
+                        reading: Reading(value, within: range,
                                          at: date, sampledAt: started, validity: validity),
                         format: sensor.format)
         }
+        let temperatures = smcTemperatures + (hidTemperatures?.sample(at: date, started: started, validity: validity) ?? [])
         let fanCount = connection.number("FNum", formats: Self.integerFormats).flatMap(Self.validFanCount)
         let fans = (0..<(fanCount ?? 0)).map {
             readFan($0, connection: connection, at: date, started: started, validity: validity)
         }
-        let freshTemperatures = temperatures.filter { $0.reading.freshValue() != nil }.count
+        let hasTemperature = temperatures.contains { $0.group != .other && $0.reading.freshValue() != nil }
+        let missingSMC = zip(sensors, smcTemperatures).contains { sensor, temperature in
+            sensor.group != .other && !sensor.canPark && temperature.reading.freshValue() == nil
+        }
         let freshFans = fans.filter { $0.speed.freshValue() != nil }.count
         let health: MonitorHealth
-        if freshTemperatures == 0 && freshFans == 0 {
+        if !hasTemperature && freshFans == 0 {
             health = .unavailable("AppleSMC returned no usable mapped temperatures or fan speeds.")
             self.connection = nil
             nextDiscovery = started.advanced(by: .seconds(sensors.isEmpty && fans.isEmpty ? 30 : 5))
-        } else if freshTemperatures == 0 || fanCount == nil ||
-                    freshTemperatures != temperatures.count || freshFans != fans.count {
+        } else if !hasTemperature || fanCount == nil || missingSMC || freshFans != fans.count {
             health = .partial
         } else {
             health = .live
@@ -147,36 +157,22 @@ public actor AppleSMCSource: TelemetrySource {
     }
 
     private func discover(_ connection: SMCConnection) -> [Sensor] {
-        let hasMap = machine.model == "Mac16,7" && machine.chip == "Apple M4 Pro"
-        let known = hasMap ? Set(Self.cpuLabels.keys).union(Self.gpuLabels.keys)
-            .union(Self.memoryKeys).union(Self.batteryLabels.keys) : []
         let catalog = includeUnclassified ? connection.keys() : []
-        let keys = Set(catalog).union(known.compactMap(SMCCodec.fourCC))
+        let alternateKeys = Set(temperatureCatalog.values.compactMap { $0.alternate.flatMap(SMCCodec.fourCC) })
+        let keys = Set(catalog).subtracting(alternateKeys).union(temperatureCatalog.keys.compactMap(SMCCodec.fourCC))
 
         return keys.compactMap { key in
-            guard let name = SMCCodec.name(key), name.hasPrefix("T"),
-                  let info = connection.describe(key), Self.thermalFormats.contains(info.format) else { return nil }
-            let group: SensorGroup
-            let label: String?
-            if hasMap, let cpuLabel = Self.cpuLabels[name] {
-                group = .cpu
-                label = cpuLabel
-            } else if hasMap, let gpuLabel = Self.gpuLabels[name] {
-                group = .gpu
-                label = gpuLabel
-            } else if hasMap, let batteryLabel = Self.batteryLabels[name] {
-                group = .battery
-                label = batteryLabel
-            } else if hasMap && Self.memoryKeys.contains(name) {
-                group = .memory
-                label = nil
-            } else {
+            guard let name = SMCCodec.name(key), name.hasPrefix("T") else { return nil }
+            let entry = temperatureCatalog[name]
+            let alternate = entry?.alternate.flatMap(SMCCodec.fourCC)
+            let info = connection.describe(key) ?? alternate.flatMap(connection.describe)
+            guard let info, Self.thermalFormats.contains(info.format) else { return nil }
+            if entry == nil {
                 guard let value = connection.number(key, formats: Self.thermalFormats),
                       (1...125).contains(value) else { return nil }
-                group = .other
-                label = nil
             }
-            return Sensor(key: key, id: SensorID(rawValue: name), group: group, format: info.format, label: label)
+            return Sensor(key: key, id: SensorID(rawValue: name), group: entry?.group ?? .other,
+                          format: info.format, label: entry?.label, canPark: entry?.canPark ?? false, alternate: alternate)
         }.sorted { $0.id.rawValue < $1.id.rawValue }
     }
 

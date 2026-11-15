@@ -7,6 +7,7 @@ Read-only checks on Mac16,7, Apple M4 Pro, macOS 26.6.2 (25G83), native arm64 de
 - Initial tests verified that the same process continued monitoring with the dashboard closed and displayed retained history after reopening. With the half-second dashboard option selected, a later UI check observed the cadence switch from 0.5 seconds to 1 second when the app moved to the background.
 - Live history is bounded by 7,200 records and the selected time retention, allowing up to an hour of half-second samples. The archive is bounded by 721 five-second buckets and a 2 MB size limit. Battery impact and long-duration memory behavior have not been measured.
 - After adding battery telemetry, a short repeat probe returned 12 usable snapshots out of 12. The cold read took 10.045 ms and the warm median was 5.010 ms. The runs were taken at different times and do not isolate the cost of the new reads.
+- With the expanded AppleSMC and HID catalog, the optimized probe returned 12 usable snapshots out of 12. The cold read took 99.084 ms. The warm median was 68.607 ms and the 95th percentile was 88.971 ms.
 
 Reproduce read latency with `Scripts/swift-tool.sh run thermal-probe --timing 20`. For process snapshots, run `ps -p PID -o %cpu=,rss=` once per second for the same interval with Overview visible and again after closing it. Capture the monitoring category at info level using `log stream` to verify cadence. Repeat in a Release build and compare History against a non-chart page to isolate rendering. Use Instruments for allocations, time profiling and power measurements.
 

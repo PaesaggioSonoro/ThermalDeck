@@ -22,6 +22,8 @@ public enum SensorGroup: String, CaseIterable, Sendable {
     case gpu = "GPU zones"
     case battery = "Battery"
     case memory = "Memory proximity"
+    case storage = "Storage"
+    case system = "System"
     case other = "Unclassified"
 }
 

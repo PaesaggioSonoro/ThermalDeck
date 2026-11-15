@@ -1,6 +1,6 @@
 # Monitoring ThermalDeck
 
-Overview shows the hottest available mapped CPU and GPU zones and measured fan speeds. Sensors shows friendly labels where mapped, firmware IDs, and reading health. Choose Name or Temperature to sort alphabetically or hottest first. Group by zone keeps the CPU, GPU, and Battery sections in place and sorts inside each section. Use Sensor Visibility to hide individual rows. Hidden sensors remain available for monitoring and menu bar selection. A dash means the value is unavailable. Fans shows measured RPM, firmware-reported target, limits, and mode. Zero RPM means the fan is stopped when the reading is live.
+Overview shows the hottest available mapped CPU and GPU zones and measured fan speeds. Sensors shows the name and temperature of each reading. Choose Name or Temperature to sort alphabetically or hottest first. Group by zone sorts within each hardware section. Use Sensor Visibility to hide individual rows. Hidden sensors remain available for monitoring, History and the menu bar. A dash means the value is unavailable. Fans shows measured RPM, firmware-reported target, limits, and mode. Zero RPM means the fan is stopped when the reading is live.
 
 On supported Macs, Overview also shows the internal battery's charge level, power source, charging state, and estimated battery power flow. The watts shown describe flow into or out of the battery. The Mac can draw power from its adapter while battery flow reads 0 W. Battery power readings appear live and are omitted from history and exports.
 

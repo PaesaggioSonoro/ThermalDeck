@@ -18,6 +18,7 @@
 - A signed helper path for live Max Fans and verified Auto on Quit. Physical validation is pending on Mac16,7 with macOS 26.6.2.
 - Administrator installation of the local fan helper without an Apple Developer membership.
 - Max Fans and Use Automatic in the menu bar, individual sensor tracking in History, and optional fan control notifications.
+- Expanded M4 Pro monitoring across AppleSMC and HID, including ten performance-core readings, GPU fabric probes and battery gas gauge temperature.
 
 ### Fixed
 
@@ -27,6 +28,6 @@
 
 ### Known limitations
 
-- M4 Pro zone mappings are partial. Other hardware and macOS versions need validation.
+- M4 Pro mappings are verified on Mac16,7. Two individual efficiency-core labels, vendor GPU cluster aliases, and other Mac models still need verification.
 - Live control is limited to Max Fans and Automatic on the supported Mac with an approved helper. Curves run in Demo.
 - Developer ID distribution, notarization and physical compatibility beyond the recorded host remain pending.

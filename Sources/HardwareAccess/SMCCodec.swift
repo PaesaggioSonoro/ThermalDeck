@@ -19,6 +19,7 @@ enum SMCCodec {
         case "ui8 ": length = 1
         case "ui16", "fpe2", "sp78": length = 2
         case "ui32", "flt ": length = 4
+        case "ioft": length = 8
         default: return nil
         }
         guard bytes.count == length else { return nil }
@@ -26,6 +27,10 @@ enum SMCCodec {
         if format == "flt " {
             let bits = bytes.reversed().reduce(UInt32(0)) { ($0 << 8) | UInt32($1) }
             return Double(Float(bitPattern: bits))
+        }
+        if format == "ioft" {
+            let bits = bytes.reversed().reduce(UInt64(0)) { ($0 << 8) | UInt64($1) }
+            return Double(Int64(bitPattern: bits)) / 65_536
         }
 
         let unsigned = bytes.reduce(UInt32(0)) { ($0 << 8) | UInt32($1) }

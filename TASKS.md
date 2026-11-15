@@ -19,3 +19,4 @@
 | TD-14 | Maximum fan override and prior mode restoration | Verified in Demo and on the development Mac. Automatic is the only prior mode for live overrides. |
 | TD-15 | Cooling shortcuts, selected sensor history and fan alerts | Implemented. Native notification delivery and the menu bar actions need installed testing. |
 | TD-16 | Live curves and adjustable fan targets | Pending trusted control sensors and a validated cooling floor. Independent fan controls are deferred. |
+| TD-17 | Discover and name more M4 Pro temperatures | AppleSMC and HID verified on Mac16,7. Sensors shows names and temperatures. Exact mappings for two individual efficiency cores and vendor GPU cluster aliases remain open. |

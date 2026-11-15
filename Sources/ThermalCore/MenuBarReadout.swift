@@ -10,9 +10,7 @@ public enum MenuBarReadout: Hashable, Codable, Sendable {
     public func label(in snapshot: Snapshot) -> String {
         switch self {
         case .sensor(let id):
-            snapshot.temperatures.first { $0.id == id }.map {
-                $0.label == id.rawValue ? $0.label : "\($0.label) (\(id.rawValue))"
-            } ?? id.rawValue
+            snapshot.temperatures.first { $0.id == id }?.displayName ?? "Unavailable sensor"
         case .highestTemperature: "Highest temperature"
         case .cpuHighest: "CPU highest"
         case .gpuHighest: "GPU highest"

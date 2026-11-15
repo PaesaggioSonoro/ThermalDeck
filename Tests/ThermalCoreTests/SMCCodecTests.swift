@@ -1,4 +1,5 @@
 import Testing
+import ThermalCore
 @testable import HardwareAccess
 
 @Test func fourCCRequiresFourPrintableASCIIBytes() {
@@ -17,6 +18,27 @@ import Testing
     #expect(SMCCodec.numeric([1, 2], format: "ui8 ") == nil)
     #expect(SMCCodec.numeric([0, 0, 0xC0, 0x7F], format: "flt ")?.isNaN == true)
     #expect(SMCCodec.numeric([50, 0], format: "ch8*") == nil)
+    #expect(SMCCodec.numeric([0, 0x80, 43, 0, 0, 0, 0, 0], format: "ioft") == 43.5)
+    #expect(SMCCodec.numeric([0, 0x80, 0xEA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], format: "ioft") == -21.5)
+    #expect(SMCCodec.numeric([0, 0x80, 43, 0], format: "ioft") == nil)
+}
+
+@Test func m4ProCatalogPreservesSensorIdentityAndNamesTenPerformanceCores() {
+    let machine = Machine(model: "Mac16,7", chip: "Apple M4 Pro", os: "Test")
+    let entries = M4ProTemperatureCatalog.entries(for: machine)
+    for (index, id) in ["Tp1j", "Tp1n", "Tp1t", "Tp1w", "Tp1z", "Tp22", "Tp25", "Tp28", "Tp2B", "Tp2E"].enumerated() {
+        #expect(entries[id]?.label == "CPU Performance Core \(index + 1)")
+        #expect(entries[id]?.group == .cpu)
+        #expect(entries[id]?.canPark == true)
+    }
+    #expect(entries["Te05"]?.label == "CPU Efficiency Core 1")
+    #expect(entries["Tp1j"]?.alternate == "Tp01")
+    #expect(entries["Tp2E"]?.alternate == "Tp0b")
+    #expect(M4ProTemperatureCatalog.Entry.activeValue(40) == nil)
+    #expect(M4ProTemperatureCatalog.Entry.activeValue(5.2) == nil)
+    #expect(M4ProTemperatureCatalog.Entry.activeValue(40.015625) == 40.015625)
+    #expect(Set(entries.values.map(\.label)).count == entries.count)
+    #expect(M4ProTemperatureCatalog.entries(for: Machine(model: "Mac16,7", chip: "Apple M4 Max", os: "Test")).isEmpty)
 }
 
 @Test func fanCountMustFitTheFirmwareKeyIndexAndBeIntegral() {
