@@ -32,6 +32,7 @@ public struct Preferences: Codable, Equatable, Sendable {
     public static let schema = 1
     public static let intervals: [Double] = [0.5, 1, 2, 5]
     public static let retentions = [300, 900, 3600]
+    public static let historySensorLimit = 4
 
     public var version = schema
     public var unit = TemperatureUnit.celsius
@@ -49,6 +50,7 @@ public struct Preferences: Codable, Equatable, Sendable {
     private var savedSensorPresentation: SensorPresentation?
     private var savedMenuBar: MenuBarSelection?
     public var storedPercentCurve: PercentFanCurve?
+    private var savedHistorySensors: [SensorID]?
 
     public init() {}
 
@@ -73,6 +75,20 @@ public struct Preferences: Codable, Equatable, Sendable {
         set { savedMenuBar = newValue }
     }
 
+    public var historySensors: [SensorID] { savedHistorySensors ?? [] }
+
+    public mutating func setHistorySensor(_ id: SensorID, tracked: Bool) {
+        var selection = historySensors
+        if tracked {
+            guard selection.count < Self.historySensorLimit, !selection.contains(id),
+                  SeriesKey.validSensorID(id) else { return }
+            selection.append(id)
+        } else {
+            selection.removeAll { $0 == id }
+        }
+        savedHistorySensors = selection.isEmpty ? nil : selection
+    }
+
     public func pollingInterval(dashboardActive: Bool) -> Double {
         dashboardActive ? interval : max(1, interval)
     }
@@ -82,5 +98,11 @@ public struct Preferences: Codable, Equatable, Sendable {
         if !Self.retentions.contains(retention) { retention = 900 }
         if let menuFanIndex, !(0...9).contains(menuFanIndex) { self.menuFanIndex = nil }
         if !thresholdCelsius.isFinite || !(40...115).contains(thresholdCelsius) { thresholdCelsius = 90 }
+        if let savedHistorySensors {
+            var seen: Set<SensorID> = []
+            self.savedHistorySensors = Array(savedHistorySensors
+                .filter { SeriesKey.validSensorID($0) && seen.insert($0).inserted }
+                .prefix(Self.historySensorLimit))
+        }
     }
 }

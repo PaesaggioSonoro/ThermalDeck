@@ -11,16 +11,16 @@ struct ProfilesView: View {
             HStack {
                 row("Automatic", model.demoCooling?.mode == .automatic || model.coolingLabel == "Automatic" ? "Active" : "",
                     detail: "Leave cooling to the system.", icon: "checkmark.circle.fill")
-                if let cooling = model.demoCooling, cooling.mode != .automatic {
-                    Button("Use Automatic", action: model.restoreAutomaticCooling)
+                if model.canUseAutomaticCooling {
+                    Button("Use Automatic", action: model.useAutomaticCooling)
                 }
             }
             Divider()
             row("Quiet", "Unavailable", detail: "Safe quieter-than-system behavior has not been verified.", icon: "lock")
             Divider()
-            row("Balanced", "Unavailable", detail: "Requires a verified control pathway.", icon: "lock")
+            row("Balanced", "Unavailable", detail: "Requires a verified minimum cooling speed under load.", icon: "lock")
             Divider()
-            row("Performance", "Unavailable", detail: "Requires a verified control pathway.", icon: "lock")
+            row("Performance", "Unavailable", detail: "A temperature-based boost still needs validation. Max Fans is available in Overview on supported Macs.", icon: "lock")
             Divider()
             HStack(alignment: .center) {
                 row("Custom", model.demoCooling?.mode == .custom ? "Active in Demo" : "Offline preview",
@@ -31,7 +31,7 @@ struct ProfilesView: View {
                 }
                 Button(editing ? "Hide Editor" : "Edit Curve…") { editing.toggle() }
             }
-            if let notice = model.demoCooling?.notice {
+            if let notice = model.demoCooling?.notice ?? model.liveCooling?.notice {
                 Text(notice).font(.caption).foregroundStyle(.secondary)
             }
         }

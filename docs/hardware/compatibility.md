@@ -2,7 +2,7 @@
 
 | Model | Chip | OS tested | Temperatures | Fan RPM | Manual / curves |
 | --- | --- | --- | --- | --- | --- |
-| Mac16,7 | Apple M4 Pro | macOS 26.6.2 (25G83) | Physical read-only probe, partial mapped coverage | Physical read-only probe and live history, stopped and spinning | Disabled, research only |
+| Mac16,7 | Apple M4 Pro | macOS 26.6.2 (25G83) | Physical read-only probe, partial mapped coverage | Physical read-only probe and live history, stopped and spinning | Max Fans and Auto restoration verified. Curves in Demo |
 | Other Apple Silicon | Varies | Untested | Discovery planned | Untested | Disabled |
 | Intel | Varies | Untested | Outside current scope | Outside current scope | Disabled |
 
@@ -20,7 +20,7 @@ Macs Fan Control 1.5.21 displayed names without firmware keys. Its CPU Efficienc
 
 `FNum` returned 2. At idle, both `F0Ac` and `F1Ac` reported 0 RPM. Both fans reported 1,350 RPM minimum, 5,777 RPM maximum, 0 RPM target, and firmware mode 3 (system managed). The app uses firmware ordering and neutral names. A stopped fan is a valid measured zero. The reported minimum is a firmware characteristic and does not describe the minimum observed speed or a safe cooling target.
 
-Live history exports from ordinary use on the same Mac captured nonzero measurements for both fans. Fan 1 peaked at about 5,831 RPM and Fan 2 at about 5,766 RPM, with reported targets up to 5,777 RPM. The reported maximum is a separate firmware value and did not cap the displayed measurements. Physical placement, controlled speed response, safe target limits, manual control, and restoration remain unverified.
+Live history exports from ordinary use on the same Mac captured nonzero measurements for both fans. Fan 1 peaked at about 5,831 RPM and Fan 2 at about 5,766 RPM, with reported targets up to 5,777 RPM. The reported maximum is a separate firmware value and did not cap the displayed measurements. Max Fans reached the rated speed on both fans. Restore Automatic and normal Quit returned control to macOS. Safe lower manual targets and exact fan placement remain unverified. [Fan control evidence](../safety/fan-control.md#physical-verification)
 
 Macs Fan Control showed both fans in Auto with the same 1,350–5,777 RPM bounds and 0 RPM while stopped. During ordinary use, ThermalDeck read about 1,342 and 1,485 RPM, and Macs Fan Control showed about 1,355 and 1,449 RPM shortly afterward. These samples corroborate stopped and spinning telemetry. The installed reference copy identifies itself as modified.
 

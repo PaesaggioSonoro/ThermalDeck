@@ -70,6 +70,7 @@ public struct Temperature: Identifiable, Sendable {
     public let group: SensorGroup
     public let reading: Reading
     public let format: String
+    public var displayName: String { label == id.rawValue ? "Unnamed temperature sensor" : label }
 
     public init(id: SensorID, label: String? = nil, group: SensorGroup, reading: Reading, format: String) {
         self.id = id

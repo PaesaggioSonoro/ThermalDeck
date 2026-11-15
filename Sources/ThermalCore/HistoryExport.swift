@@ -45,6 +45,7 @@ private extension SeriesKey {
         case .cpu: "cpu_zone_peak"
         case .gpu: "gpu_zone_peak"
         case .battery: "battery_peak"
+        case .sensor(let id): "sensor_" + id.rawValue
         case .fan(let id): "fan_\(id.rawValue)_measured"
         case .target(let id): "fan_\(id.rawValue)_target"
         }

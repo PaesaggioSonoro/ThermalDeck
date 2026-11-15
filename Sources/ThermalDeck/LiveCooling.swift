@@ -39,6 +39,7 @@ final class LiveCooling {
     @ObservationIgnored private var restoration: Task<Bool, Never>?
     @ObservationIgnored private var revision = 0
     @ObservationIgnored private var lastCheck: ContinuousClock.Instant?
+    @ObservationIgnored var reportIssue: ((MonitorAlert?) -> Void)?
 
     private(set) var availability: Availability
     private(set) var state: FanControlResult = .unavailable
@@ -79,7 +80,10 @@ final class LiveCooling {
               lastCheck.map({ $0.duration(to: .now) >= .seconds(2) }) ?? true else { return }
         lastCheck = .now
         refreshAvailability()
-        guard availability == .ready else { return }
+        guard availability == .ready else {
+            if needsRestoration { connectionLost() }
+            return
+        }
         let requestRevision = revision
         watch = Task { [weak self] in
             guard let self else { return }
@@ -87,8 +91,13 @@ final class LiveCooling {
             watch = nil
             guard revision == requestRevision, !changing else { return }
             if result == .unavailable && needsRestoration {
+                connectionLost()
+                return
+            }
+            if needsRestoration && (result == .busy || result == .external || result == .unsupported) {
                 state = .unconfirmed
                 notice = "System control could not be confirmed. Choose Restore Automatic to retry."
+                reportIssue?(.fanRestoreUnconfirmed)
                 return
             }
             apply(result)
@@ -121,14 +130,14 @@ final class LiveCooling {
         revision += 1
         let requestRevision = revision
         notice = nil
+        reportIssue?(nil)
         Task {
             guard revision == requestRevision else { return }
             let result = await send(.maximum)
             guard revision == requestRevision else { return }
             changing = false
             if result == .unavailable {
-                state = .unconfirmed
-                notice = "The helper connection was lost. Choose Restore Automatic to verify system control."
+                connectionLost()
                 return
             }
             apply(result)
@@ -157,7 +166,15 @@ final class LiveCooling {
         }
         state = .unconfirmed
         notice = "System control could not be confirmed. Choose Restore Automatic to retry."
+        reportIssue?(.fanRestoreUnconfirmed)
         return false
+    }
+
+    private func connectionLost() {
+        guard state != .unconfirmed else { return }
+        state = .unconfirmed
+        notice = "The helper connection was lost. Choose Restore Automatic to verify system control."
+        reportIssue?(.fanControlDisconnected)
     }
 
     private func refreshAvailability() {
@@ -211,6 +228,11 @@ final class LiveCooling {
         case .unconfirmed: "System control could not be confirmed. Choose Restore Automatic to retry."
         case .thermalPressure: "Try Max Fans again after macOS thermal pressure drops."
         default: nil
+        }
+        switch result {
+        case .stopped: reportIssue?(.fanControlStopped)
+        case .unconfirmed: reportIssue?(.fanRestoreUnconfirmed)
+        default: reportIssue?(nil)
         }
     }
 

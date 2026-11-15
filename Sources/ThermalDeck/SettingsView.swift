@@ -60,7 +60,7 @@ struct SettingsView: View {
                         Text(model.temperature(115))
                     }
                     LabeledContent("Alert threshold", value: model.temperature(model.preferences.thresholdCelsius))
-                    Text("This threshold is a personal alert preference.")
+                    Text("This threshold is a personal alert preference. Notifications also cover monitoring outages and fan control issues.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

@@ -87,6 +87,9 @@ final class AppModel {
         } else {
             storedPreferences = Preferences()
         }
+        liveCooling?.reportIssue = { [weak self] issue in
+            self?.evaluateFanControlAlert(issue)
+        }
         if preferences.persistHistory { loadArchive() }
         lifecycle = [
             workspace.publisher(for: NSWorkspace.willSleepNotification).receive(on: RunLoop.main)
@@ -170,6 +173,25 @@ final class AppModel {
         return demoCooling.applying ? "Applying " + demoCooling.mode.rawValue + "…" : demoCooling.mode.rawValue
     }
 
+    var canStartMaximumFans: Bool {
+        if let demoCooling { return demoCooling.previousMode == nil && demoCooling.canStart() }
+        return liveCooling?.needsRestoration == false && liveCooling?.canToggle == true
+    }
+
+    var canUseAutomaticCooling: Bool {
+        if let demoCooling { return demoCooling.mode != .automatic }
+        return liveCooling?.needsRestoration == true && liveCooling?.changing == false
+    }
+
+    func useAutomaticCooling() {
+        guard canUseAutomaticCooling else { return }
+        if let liveCooling {
+            Task { await liveCooling.restore() }
+        } else {
+            restoreAutomaticCooling()
+        }
+    }
+
     func toggleMaximumFans() {
         if demoCooling != nil {
             demoCooling?.toggleMaximum()
@@ -211,7 +233,8 @@ final class AppModel {
         snapshot = sample
         liveCooling?.refresh()
         if preferences.collectHistory {
-            history.append(HistoryRecord(snapshot: sample, now: now), retention: preferences.retention)
+            history.append(HistoryRecord(snapshot: sample, selectedSensors: preferences.historySensors, now: now),
+                           retention: preferences.retention)
             writeHistoryIfDue(now: now)
         } else {
             let count = history.records.count
@@ -255,6 +278,19 @@ final class AppModel {
                 "Fresh temperature and fan telemetry could not be confirmed."
             Task { await LocalAlerts.deliver(action, detail: detail) }
         }
+    }
+
+    private func evaluateFanControlAlert(_ issue: MonitorAlert?) {
+        guard preferences.alerts,
+              let alert = alertPolicy.evaluateFanControl(issue) else { return }
+        let detail: String
+        switch alert {
+        case .fanControlStopped: detail = "The helper ended Max Fans and confirmed macOS has control."
+        case .fanControlDisconnected: detail = "Open ThermalDeck and use Restore Automatic to check who controls the fans."
+        case .fanRestoreUnconfirmed: detail = "Open ThermalDeck and retry Restore Automatic."
+        default: return
+        }
+        Task { await LocalAlerts.deliver(alert, detail: detail) }
     }
 
     private func loadArchive() {

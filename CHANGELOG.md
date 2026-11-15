@@ -17,6 +17,7 @@
 - An Overview Max Fans toggle and saved curve activation in Demo mode. Turning off Max Fans restores the prior demo cooling mode.
 - A signed helper path for live Max Fans and verified Auto on Quit. Physical validation is pending on Mac16,7 with macOS 26.6.2.
 - Administrator installation of the local fan helper without an Apple Developer membership.
+- Max Fans and Use Automatic in the menu bar, individual sensor tracking in History, and optional fan control notifications.
 
 ### Fixed
 

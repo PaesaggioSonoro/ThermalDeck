@@ -55,6 +55,48 @@ import Testing
     #expect(evaluate(nil, .unavailable("offline"), 800).isEmpty)
 }
 
+@Test func fanControlAlertsDeduplicateAndKeepSeparateCooldowns() {
+    var policy = AlertPolicy()
+    let start = ContinuousClock.now
+    #expect(policy.evaluateFanControl(.fanControlDisconnected, now: start) == .fanControlDisconnected)
+    #expect(policy.evaluateFanControl(.fanControlDisconnected, now: start.advanced(by: .seconds(400))) == nil)
+    #expect(policy.evaluateFanControl(.fanRestoreUnconfirmed, now: start.advanced(by: .seconds(1))) == .fanRestoreUnconfirmed)
+    #expect(policy.evaluateFanControl(nil, now: start.advanced(by: .seconds(2))) == nil)
+    #expect(policy.evaluateFanControl(.fanControlDisconnected, now: start.advanced(by: .seconds(3))) == nil)
+    #expect(policy.evaluateFanControl(nil, now: start.advanced(by: .seconds(301))) == nil)
+    #expect(policy.evaluateFanControl(.fanControlDisconnected, now: start.advanced(by: .seconds(302))) == .fanControlDisconnected)
+}
+
+@Test func trackedSensorHistoryPreservesSelectionAndBreaksOnStaleReadings() throws {
+    let clock = ContinuousClock.now
+    let date = Date(timeIntervalSinceReferenceDate: 20_000)
+    let tracked = SensorID(rawValue: "Te05")
+    let stale = SensorID(rawValue: "Te0S")
+    let unclassified = SensorID(rawValue: "Tx01")
+    let sensors = [
+        Temperature(id: tracked, group: .cpu,
+                    reading: Reading(45, within: 5...125, at: date, sampledAt: clock), format: "flt "),
+        Temperature(id: stale, group: .cpu,
+                    reading: Reading(42, within: 5...125, at: date, sampledAt: clock, validity: .zero), format: "flt "),
+        Temperature(id: unclassified, group: .other,
+                    reading: Reading(47, within: 5...125, at: date, sampledAt: clock), format: "flt ")
+    ]
+    let snapshot = Snapshot(machine: Machine(model: "Test", chip: "Test", os: "Test"),
+                            temperatures: sensors, health: .live, timestamp: date)
+    var prefs = Preferences()
+    for id in [tracked, stale, unclassified] { prefs.setHistorySensor(id, tracked: true) }
+    var restored = try JSONDecoder().decode(Preferences.self, from: JSONEncoder().encode(prefs))
+    restored.normalize()
+    #expect(restored.historySensors == [tracked, stale, unclassified])
+    let record = HistoryRecord(snapshot: snapshot, selectedSensors: restored.historySensors, now: clock)
+    #expect(record.values[.sensor(tracked)] == 45)
+    #expect(record.values[.sensor(stale)] == nil)
+    #expect(record.values[.sensor(unclassified)] == nil)
+    let csv = String(decoding: try HistoryExport.encode([record], simulated: false, format: .csv), as: UTF8.self)
+    #expect(csv.contains(",sensor_Te05,celsius,45.0,"))
+    #expect(!csv.contains("sensor_Te0S"))
+}
+
 @Test func savedHistoryKeepsAnExplicitGapDuringAggregation() {
     let start = Date(timeIntervalSinceReferenceDate: 20_000)
     var history = HistoryBuffer()

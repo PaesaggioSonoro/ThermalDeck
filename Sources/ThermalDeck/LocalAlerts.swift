@@ -26,7 +26,13 @@ enum LocalAlerts {
         let status = await center.notificationSettings().authorizationStatus
         guard status == .authorized || status == .provisional else { return }
         let content = UNMutableNotificationContent()
-        content.title = alert == .highTemperature ? "Temperature threshold reached" : "Thermal monitoring interrupted"
+        content.title = switch alert {
+        case .highTemperature: "Temperature threshold reached"
+        case .unavailable: "Thermal monitoring interrupted"
+        case .fanControlStopped: "Fan override ended"
+        case .fanControlDisconnected: "Fan control helper disconnected"
+        case .fanRestoreUnconfirmed: "Automatic fan control unconfirmed"
+        }
         content.body = detail
         do {
             try await center.add(UNNotificationRequest(identifier: "thermaldeck-\(alert)", content: content, trigger: nil))

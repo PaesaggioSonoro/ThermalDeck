@@ -22,7 +22,7 @@ Open Sensors to sort readings, group by zone, or hide individual rows. Open Fans
 
 ## Cooling and safety
 
-Automatic leaves cooling under macOS control. Overview's live Max Fans uses a separate root helper on Mac16,7 with M4 Pro on macOS 26.6.2 build 25G83. The local build works with an ad hoc signature and does not require an Apple Developer membership. Physical verification is pending. [Fan control](docs/safety/fan-control.md)
+Automatic leaves cooling under macOS control. Max Fans uses a separate root helper. Both fans reached their rated speed on Mac16,7 with M4 Pro on macOS 26.6.2 build 25G83. Restore Automatic and normal Quit both returned cooling to macOS. The local build uses an ad hoc signature and does not require an Apple Developer membership. [Fan control](docs/safety/fan-control.md)
 
 Quit ThermalDeck, then run these commands from the repository to build the app and install the matching helper:
 

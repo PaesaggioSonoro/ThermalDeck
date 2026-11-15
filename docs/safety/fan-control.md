@@ -2,7 +2,7 @@
 
 ## Device decision
 
-The maximum-only helper targets Mac16,7 with Apple M4 Pro and macOS 26.6.2 build 25G83. An administrator can install it from an ad hoc local build. Its write path and normal-quit handoff still need physical verification. Custom curves remain in Demo pending validation of control-grade sensors and a system cooling floor. Crash recovery is deferred. Behavior after abrupt helper termination is unknown.
+The maximum-only helper was physically verified on Mac16,7 with Apple M4 Pro and macOS 26.6.2 build 25G83. An administrator can install it from an ad hoc local build. Custom curves remain in Demo pending validation of control-grade sensors and a system cooling floor. Crash recovery is deferred. Behavior after abrupt helper termination is unknown.
 
 The installed Macs Fan Control 1.5.21 app and its root-owned fan-write helper are present. CrystalIDEA reports that M3/M4 MacBook Pro control returned in 1.5.18 and that normal Quit returns all fans to Auto. The vendor does not publish the helper's write or restoration contract, and its [documented command line](https://crystalidea.com/macs-fan-control/command-line) does not expose fan control. [Release notes](https://crystalidea.com/macs-fan-control/release-notes) · [Normal Quit behavior](https://crystalidea.com/macs-fan-control)
 
@@ -47,6 +47,6 @@ The helper starts from two fans in system mode with the override clear. It verif
 
 ## Physical verification
 
-With the helper installed on the supported Mac, start with both fans in Auto and other fan controls inactive. Use Max Fans briefly at idle. Record the two modes, targets and measured RPM. Test Restore Automatic and repeat with normal Quit. Confirm `Ftst = 0`, both modes are `3` and measured RPM follows the system targets as the fans settle. The in-memory tests cover the command sequence, failed spin-up, partial writes, high thermal pressure and a failed restore followed by a retry.
+The installed helper from commit `5e58989` reached Maximum with dashboard readings of 5,777 and 5,780 RPM. Restore Automatic returned both fans to 0 RPM at idle. A second run reached Maximum and the app quit normally. A separate SMC read after Quit confirmed `Ftst = 0`, both modes at `3`, and both targets and measured speeds at 0 RPM. Physical sleep and wake while an override is active still need verification. The in-memory tests cover failed spin-up, partial writes, high thermal pressure and a failed restore followed by a retry.
 
 Manual cooling can alter normal thermal behavior and may contribute to higher temperatures, instability, hardware damage or data loss. ThermalDeck uses undocumented read interfaces and is provided as is under the MIT license. Use is at your own risk. ThermalDeck has no affiliation with Apple.

@@ -2,6 +2,7 @@ import Foundation
 
 public enum SeriesKey: Hashable, Codable, Sendable {
     case cpu, gpu, battery
+    case sensor(SensorID)
     case fan(FanID), target(FanID)
 
     public var label: String {
@@ -9,6 +10,7 @@ public enum SeriesKey: Hashable, Codable, Sendable {
         case .cpu: "CPU zones"
         case .gpu: "GPU zones"
         case .battery: "Battery peak"
+        case .sensor(let id): id.rawValue
         case .fan(let id): id.name
         case .target(let id): id.name + " target"
         }
@@ -16,7 +18,7 @@ public enum SeriesKey: Hashable, Codable, Sendable {
 
     public var isTemperature: Bool {
         switch self {
-        case .cpu, .gpu, .battery: true
+        case .cpu, .gpu, .battery, .sensor: true
         case .fan, .target: false
         }
     }
@@ -24,7 +26,15 @@ public enum SeriesKey: Hashable, Codable, Sendable {
     func validates(_ value: Double) -> Bool {
         switch self {
         case .cpu, .gpu, .battery: return (5...125).contains(value)
+        case .sensor(let id): return Self.validSensorID(id) && (5...125).contains(value)
         case .fan(let id), .target(let id): return (0...9).contains(id.rawValue) && (0...20_000).contains(value)
+        }
+    }
+
+    static func validSensorID(_ id: SensorID) -> Bool {
+        (1...32).contains(id.rawValue.utf8.count) && id.rawValue.utf8.allSatisfy {
+            (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) ||
+                $0 == 45 || $0 == 46 || $0 == 95
         }
     }
 }
@@ -38,12 +48,16 @@ public struct HistoryRecord: Codable, Sendable {
         self.values = values
     }
 
-    public init(snapshot: Snapshot, now: ContinuousClock.Instant = .now) {
+    public init(snapshot: Snapshot, selectedSensors: [SensorID] = [], now: ContinuousClock.Instant = .now) {
         var values: [SeriesKey: Double] = [
             .cpu: snapshot.peak(.cpu, at: now),
             .gpu: snapshot.peak(.gpu, at: now),
             .battery: snapshot.peak(.battery, at: now)
         ].compactMapValues { $0 }
+        let tracked = Set(selectedSensors.prefix(Preferences.historySensorLimit))
+        for sensor in snapshot.temperatures where sensor.group != .other && tracked.contains(sensor.id) {
+            values[.sensor(sensor.id)] = sensor.reading.freshValue(at: now)
+        }
         for fan in snapshot.fans {
             values[.fan(fan.id)] = fan.speed.freshValue(at: now)
             if !fan.speed.hasExpired(at: now) { values[.target(fan.id)] = fan.target }
@@ -74,7 +88,13 @@ public struct HistoryBuffer: Sendable {
             guard last.date.timeIntervalSince(record.date) > 1 else { return }
             records.removeAll()
         }
-        records.append(HistoryRecord(date: record.date, values: record.values.filter { $0.key.validates($0.value) }))
+        var values = record.values.filter { $0.key.validates($0.value) }
+        let sensors = values.keys.compactMap { key -> SensorID? in
+            if case .sensor(let id) = key { return id }
+            return nil
+        }.sorted { $0.rawValue < $1.rawValue }
+        for id in sensors.dropFirst(Preferences.historySensorLimit) { values.removeValue(forKey: .sensor(id)) }
+        records.append(HistoryRecord(date: record.date, values: values))
         trim(at: record.date, retention: retention)
     }
 

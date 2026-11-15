@@ -44,6 +44,9 @@ final class MenuBarStatusController: NSObject, NSMenuDelegate {
         }
         menu.addItem(.separator())
         addInformation("Cooling: " + model.coolingLabel, to: menu)
+        addCommand("Use Automatic", action: #selector(useAutomatic), enabled: model.canUseAutomaticCooling, to: menu)
+        addCommand("Max Fans", action: #selector(maxFans), enabled: model.canStartMaximumFans, to: menu)
+        menu.addItem(.separator())
         addCommand("Open Dashboard", action: #selector(openDashboard), to: menu)
         addCommand("Settings…", action: #selector(openSettings), to: menu)
         menu.addItem(.separator())
@@ -56,13 +59,18 @@ final class MenuBarStatusController: NSObject, NSMenuDelegate {
         menu.addItem(row)
     }
 
-    private func addCommand(_ title: String, action: Selector, to menu: NSMenu) {
+    private func addCommand(_ title: String, action: Selector, enabled: Bool = true, to menu: NSMenu) {
         let row = NSMenuItem(title: title, action: action, keyEquivalent: "")
         row.target = self
+        row.isEnabled = enabled
         menu.addItem(row)
     }
 
     @objc private func openDashboard() { showDashboard() }
+    @objc private func useAutomatic() { model.useAutomaticCooling() }
+    @objc private func maxFans() {
+        if model.canStartMaximumFans { model.toggleMaximumFans() }
+    }
     @objc private func openSettings() { showSettings() }
     @objc private func quit() { NSApp.terminate(nil) }
 }
