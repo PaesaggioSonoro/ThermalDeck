@@ -155,8 +155,13 @@ final class AppModel {
     }
 
     func temperature(_ value: Double?) -> String {
+        temperature(value, unitSeparator: " ")
+    }
+
+    private func temperature(_ value: Double?, unitSeparator: String) -> String {
         guard let value else { return "—" }
-        return preferences.unit.displayValue(value).formatted(.number.precision(.fractionLength(0...1))) + " " + preferences.unit.symbol
+        let unit = preferences.unit
+        return unit.displayValue(value).formatted(.number.precision(.fractionLength(0...1))) + unitSeparator + unit.symbol
     }
 
     func rpm(_ value: Double?) -> String {
@@ -218,10 +223,19 @@ final class AppModel {
     }
 
     func menuBarValue(_ readout: MenuBarReadout) -> String {
-        let value = readout.value(in: snapshot)
+        let value = readout.value(in: snapshot, hiding: preferences.sensorPresentation.hiddenSensors)
         if case .fan = readout { return rpm(value) }
-        guard let value else { return "—" }
-        return preferences.unit.displayValue(value).formatted(.number.precision(.fractionLength(0))) + preferences.unit.symbol
+        return temperature(value, unitSeparator: "")
+    }
+
+    func menuBarDescription(_ readout: MenuBarReadout) -> String {
+        let title = readout.label(in: snapshot)
+        let now = ContinuousClock.now
+        if case .fan = readout { return title + "  " + rpm(readout.value(in: snapshot, at: now)) }
+        let sensor = readout.temperatureSensor(in: snapshot, hiding: preferences.sensorPresentation.hiddenSensors, at: now)
+        let name = sensor?.displayName ?? title
+        let label = title == name ? title : title + " · " + name
+        return label + "  " + temperature(sensor?.reading.freshValue(at: now))
     }
 
     private func accept(_ sample: Snapshot, expires: ContinuousClock.Instant) {

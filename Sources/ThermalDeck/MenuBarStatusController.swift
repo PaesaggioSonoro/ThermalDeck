@@ -40,7 +40,7 @@ final class MenuBarStatusController: NSObject, NSMenuDelegate {
         if model.snapshot.simulated { addInformation("Simulation", to: menu) }
         addInformation(model.snapshot.health.label, to: menu)
         for readout in model.preferences.menuBar.readouts {
-            addInformation(readout.label(in: model.snapshot) + "  " + model.menuBarValue(readout), to: menu)
+            addInformation(model.menuBarDescription(readout), to: menu)
         }
         menu.addItem(.separator())
         addInformation("Cooling: " + model.coolingLabel, to: menu)

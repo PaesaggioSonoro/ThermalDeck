@@ -46,6 +46,15 @@ import ThermalCore
     #expect(model.snapshot.fans.map(\.mode) == [.system, .system])
 }
 
+@MainActor @Test func menuBarTemperatureMatchesSensorPrecisionAndNamesItsSource() async throws {
+    let model = AppModel(source: LifecycleSource(temperature: 46.7), workspace: NotificationCenter())
+    try await waitForSnapshot(model) { $0.health == .live }
+
+    let appTemperature = model.temperature(46.7)
+    #expect(model.menuBarValue(.highestTemperature) == appTemperature.replacingOccurrences(of: " ", with: ""))
+    #expect(model.menuBarDescription(.highestTemperature) == "Highest temperature · Fixture CPU  " + appTemperature)
+}
+
 @MainActor
 private func waitForSnapshot(
     _ model: AppModel, timeout: Duration = .seconds(3), matching predicate: @escaping @Sendable (Snapshot) -> Bool
@@ -80,10 +89,12 @@ private struct SnapshotTimeout: Error {}
 private actor LifecycleSource: TelemetrySource {
     nonisolated let machine = Machine(model: "Fixture", chip: "Fixture", os: "Fixture")
     nonisolated let simulated = true
-    private var temperature = 40.0
+    private var temperature: Double
+
+    init(temperature: Double = 40) { self.temperature = temperature }
 
     func sample(validity: Duration) -> Snapshot {
-        let sensor = Temperature(id: SensorID(rawValue: "TEST"), group: .cpu,
+        let sensor = Temperature(id: SensorID(rawValue: "TEST"), label: "Fixture CPU", group: .cpu,
                                  reading: Reading(temperature, within: 1...125, at: .now, validity: validity),
                                  format: "Fixture")
         return Snapshot(machine: machine, temperatures: [sensor], health: .live, simulated: simulated)

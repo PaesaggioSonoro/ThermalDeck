@@ -26,6 +26,7 @@
 - The menu bar keeps a monochrome logo visible alongside live values. Its settings page previews all layouts and requires a first value before a second can be selected.
 - The two Menu Bar selectors sit side by side.
 - The M4 Pro list shows 26 familiar CPU, GPU, battery and system entries. Additional hardware probes are available through the diagnostic catalog.
+- Automatic menu bar temperatures match the visible Sensors list and show the source sensor in the menu.
 
 ### Known limitations
 

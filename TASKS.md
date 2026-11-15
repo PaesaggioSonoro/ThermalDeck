@@ -21,3 +21,4 @@
 | TD-16 | Live curves and adjustable fan targets | Pending trusted control sensors and a validated cooling floor. Independent fan controls are deferred. |
 | TD-17 | Discover and name more M4 Pro temperatures | AppleSMC and HID verified on Mac16,7. Additional probes are available in the diagnostic catalog. |
 | TD-18 | Match the M4 Pro Sensors list to Macs Fan Control labels | 26 requested entries, with four efficiency-core labels sharing two sensor readings. |
+| TD-19 | Match automatic menu bar temperatures to Sensors | Uses visible readings and the same precision. The dropdown identifies the source. |

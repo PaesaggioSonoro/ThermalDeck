@@ -19,15 +19,31 @@ public enum MenuBarReadout: Hashable, Codable, Sendable {
         }
     }
 
-    public func value(in snapshot: Snapshot, at now: ContinuousClock.Instant = .now) -> Double? {
-        switch self {
-        case .sensor(let id): snapshot.temperatures.first { $0.id == id }?.reading.freshValue(at: now)
-        case .highestTemperature: snapshot.highestTemperature(at: now)
-        case .cpuHighest: snapshot.peak(.cpu, at: now)
-        case .gpuHighest: snapshot.peak(.gpu, at: now)
-        case .fan(let id): snapshot.fans.first { $0.id == id }?.speed.freshValue(at: now)
-        case .cpuGPUHighest: snapshot.peak(at: now)
+    public func value(
+        in snapshot: Snapshot, hiding hidden: Set<SensorID> = [], at now: ContinuousClock.Instant = .now
+    ) -> Double? {
+        if case .fan(let id) = self {
+            return snapshot.fans.first { $0.id == id }?.speed.freshValue(at: now)
         }
+        return temperatureSensor(in: snapshot, hiding: hidden, at: now)?.reading.freshValue(at: now)
+    }
+
+    public func temperatureSensor(
+        in snapshot: Snapshot, hiding hidden: Set<SensorID> = [], at now: ContinuousClock.Instant = .now
+    ) -> Temperature? {
+        let groups: Set<SensorGroup>
+        switch self {
+        case .sensor(let id): return snapshot.temperatures.first { $0.id == id }
+        case .fan: return nil
+        case .highestTemperature: groups = Set(SensorGroup.allCases).subtracting([.other])
+        case .cpuHighest: groups = [.cpu]
+        case .gpuHighest: groups = [.gpu]
+        case .cpuGPUHighest: groups = [.cpu, .gpu]
+        }
+        return snapshot.temperatures.lazy
+            .filter { groups.contains($0.group) && !hidden.contains($0.id) }
+            .compactMap { sensor in sensor.reading.freshValue(at: now).map { (sensor: sensor, value: $0) } }
+            .max { $0.value < $1.value }?.sensor
     }
 }
 

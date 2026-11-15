@@ -52,6 +52,25 @@ import ThermalCore
     #expect(MenuBarReadout.highestTemperature.value(in: snapshot, at: now.advanced(by: .seconds(30))) == nil)
 }
 
+@Test func automaticMenuReadoutsUseVisibleTemperaturesInsteadOfTheAlertHotspot() {
+    let now = ContinuousClock.now
+    let cpu = sensor("CPU", "CPU Performance Core 1", .cpu, 46.7)
+    let gpu = sensor("GPU", "GPU Cluster 1", .gpu, 44.5)
+    let battery = sensor("BAT", "Battery", .battery, 47.2)
+    let hotspot = Reading(61, within: 5...125, at: .now, sampledAt: now)
+    let snapshot = Snapshot(machine: Machine(model: "Test", chip: "Test", os: "Test"),
+                            temperatures: [cpu, gpu, battery], cpuHotspot: hotspot, health: .live)
+
+    #expect(snapshot.peak(.cpu, at: now) == 61)
+    #expect(MenuBarReadout.highestTemperature.temperatureSensor(in: snapshot, at: now)?.id == battery.id)
+    #expect(MenuBarReadout.highestTemperature.value(in: snapshot, hiding: [battery.id], at: now) == 46.7)
+    #expect(MenuBarReadout.cpuHighest.value(in: snapshot, at: now) == 46.7)
+    #expect(MenuBarReadout.cpuHighest.value(in: snapshot, hiding: [cpu.id], at: now) == nil)
+    #expect(MenuBarReadout.gpuHighest.value(in: snapshot, at: now) == 44.5)
+    #expect(MenuBarReadout.cpuGPUHighest.value(in: snapshot, at: now) == 46.7)
+    #expect(MenuBarReadout.sensor(battery.id).value(in: snapshot, hiding: [battery.id], at: now) == 47.2)
+}
+
 @Test func menuBarSecondValueDependsOnTheFirstAndLegacyOrphansMoveToFirst() throws {
     let fan = MenuBarReadout.fan(FanID(rawValue: 1))
     var selection = MenuBarSelection()
