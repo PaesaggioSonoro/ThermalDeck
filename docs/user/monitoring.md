@@ -2,6 +2,8 @@
 
 Overview shows the hottest available mapped CPU and GPU zones and measured fan speeds. Sensors shows the name and temperature of each reading. Choose Name or Temperature to sort alphabetically or hottest first. Group by zone sorts within each hardware section. Use Sensor Visibility to hide individual rows. Hidden sensors remain available for monitoring, History and the menu bar. A dash means the value is unavailable. Fans shows measured RPM, firmware-reported target, limits, and mode. Zero RPM means the fan is stopped when the reading is live.
 
+On the 16-inch M4 Pro MacBook Pro, Sensors offers 26 entries. Efficiency cores 1 and 2 share a reading, as do cores 3 and 4. The CPU and GPU averages use the currently available core and cluster values.
+
 On supported Macs, Overview also shows the internal battery's charge level, power source, charging state, and estimated battery power flow. The watts shown describe flow into or out of the battery. The Mac can draw power from its adapter while battery flow reads 0 W. Battery power readings appear live and are omitted from history and exports.
 
 History records mapped peaks and measured fan speeds. Enable Battery or Targets in History to show those series. Change the time range and retention in Settings. Missing samples create chart gaps. History is in memory by default. Opt in to save a bounded five-second aggregate across launches. Use Clear History to remove current and saved data. Disabling saved history also removes the local archive. Collection can remain on independently. The archive is periodically checkpointed, so the most recent samples can be lost on exit.

@@ -4,7 +4,7 @@ ThermalDeck is a native, offline macOS utility for monitoring temperatures, fans
 
 ## Hardware and system requirements
 
-The minimum deployment target is macOS 15 on Apple Silicon. Physical testing on the M4 Pro MacBook Pro (Mac16,7), running macOS 26.6.2 (25G83), found 171 named temperature readings across the CPU, GPU, battery, storage, memory, and system. Both fans were measured in stopped and spinning states. Other Apple Silicon models and OS releases need validation. [Hardware compatibility](docs/hardware/compatibility.md)
+The minimum deployment target is macOS 15 on Apple Silicon. The 16-inch M4 Pro MacBook Pro (Mac16,7) shows 26 temperature entries in Sensors. Both fans were measured in stopped and spinning states on macOS 26.6.2 (25G83). Other Apple Silicon models and OS releases need validation. [Hardware compatibility](docs/hardware/compatibility.md)
 
 ## Build and launch
 

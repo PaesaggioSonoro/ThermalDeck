@@ -25,9 +25,10 @@
 - Preference edits could recurse and terminate the app. Settings now normalize changes before writing them.
 - The menu bar keeps a monochrome logo visible alongside live values. Its settings page previews all layouts and requires a first value before a second can be selected.
 - The two Menu Bar selectors sit side by side.
+- The M4 Pro list shows 26 familiar CPU, GPU, battery and system entries. Additional hardware probes are available through the diagnostic catalog.
 
 ### Known limitations
 
-- M4 Pro mappings are verified on Mac16,7. Two individual efficiency-core labels, vendor GPU cluster aliases, and other Mac models still need verification.
+- M4 Pro mappings are verified on Mac16,7. The four efficiency-core labels share two physical measurements. Other Mac models still need verification.
 - Live control is limited to Max Fans and Automatic on the supported Mac with an approved helper. Curves run in Demo.
 - Developer ID distribution, notarization and physical compatibility beyond the recorded host remain pending.

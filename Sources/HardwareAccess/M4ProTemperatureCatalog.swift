@@ -1,3 +1,4 @@
+import Foundation
 import ThermalCore
 
 enum M4ProTemperatureCatalog {
@@ -13,11 +14,54 @@ enum M4ProTemperatureCatalog {
         }
     }
 
-    static func entries(for machine: Machine) -> [String: Entry] {
-        machine.model == "Mac16,7" && machine.chip == "Apple M4 Pro" ? entries : [:]
+    static func entries(for machine: Machine, diagnostics: Bool = false) -> [String: Entry] {
+        guard machine.model == "Mac16,7", machine.chip == "Apple M4 Pro" else { return [:] }
+        return diagnostics ? diagnosticEntries.merging(monitoredEntries) { _, monitored in monitored } : monitoredEntries
     }
 
-    private static let entries: [String: Entry] = {
+    private static let monitoredEntries: [String: Entry] = {
+        let existingKeys: Set = ["TB0T", "TW0P", "Tp1j", "Tp1n", "Tp1t", "Tp1w", "Tp1z",
+                                 "Tp22", "Tp25", "Tp28", "Tp2B", "Tp2E"]
+        var result = diagnosticEntries.filter { existingKeys.contains($0.key) }
+        result["Te05"] = Entry(label: "CPU Efficiency Core 1", group: .cpu, alternate: nil)
+        result["Te0S"] = Entry(label: "CPU Efficiency Core 3", group: .cpu, alternate: nil)
+        result["TPMP"] = Entry(label: "Power Supply Proximity", group: .system, alternate: nil)
+        for (index, key) in ["Tg05", "Tg0S", "Tg0Y", "Tg0k", "Tg0z"].enumerated() {
+            result[key] = Entry(label: "GPU Cluster \(index + 1)", group: .gpu, alternate: nil)
+        }
+        return result
+    }()
+
+    static func derivedTemperatures(
+        from smc: [Temperature], at date: Date, started: ContinuousClock.Instant, validity: Duration
+    ) -> [Temperature] {
+        var monitored = smc.filter { monitoredEntries[$0.id.rawValue] != nil }
+        var derived: [Temperature] = []
+        // Macs Fan Control uses one physical reading for each pair of efficiency-core labels.
+        for (key, core) in [("Te05", 2), ("Te0S", 4)] {
+            guard let source = monitored.first(where: { $0.id.rawValue == key }) else { continue }
+            derived.append(Temperature(id: SensorID(rawValue: "cpu-efficiency-\(core)"),
+                                       label: "CPU Efficiency Core \(core)", group: .cpu,
+                                       reading: source.reading, format: source.format))
+        }
+        monitored.append(contentsOf: derived)
+        func average(_ group: SensorGroup, id: String, label: String) -> Temperature? {
+            let readings = monitored.filter { $0.group == group }
+            guard !readings.isEmpty else { return nil }
+            let values = readings.compactMap { $0.reading.freshValue(at: started) }
+            let value = values.isEmpty ? nil : values.reduce(0, +) / Double(values.count)
+            return Temperature(id: SensorID(rawValue: id), label: label, group: group,
+                               reading: Reading(value, within: 5...125, at: date, sampledAt: started, validity: validity),
+                               format: "average")
+        }
+        derived.append(contentsOf: [
+            average(.cpu, id: "cpu-core-average", label: "CPU Core Average"),
+            average(.gpu, id: "gpu-cluster-average", label: "GPU Cluster Average")
+        ].compactMap { $0 })
+        return derived
+    }
+
+    private static let diagnosticEntries: [String: Entry] = {
         var result: [String: Entry] = [:]
         func add(_ key: String, _ label: String, _ group: SensorGroup, alternate: String? = nil) {
             result[key] = Entry(label: label, group: group, alternate: alternate)
@@ -79,7 +123,7 @@ enum M4ProTemperatureCatalog {
         add("TIOP", "I/O Processor", .system)
         add("TSCD", "System Controller", .system)
         add("TPMP", "Power Manager Proximity", .system)
-        add("TPSP", "Power Supply Proximity", .system)
+        add("TPSP", "Power Supply Sensor", .system)
         add("TMVR", "Memory Voltage Regulator", .memory)
         add("TVmS", "Memory Temperature Summary", .memory)
         add("TH0x", "NAND Flash", .storage)

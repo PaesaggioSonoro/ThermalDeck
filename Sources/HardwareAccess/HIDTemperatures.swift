@@ -3,6 +3,8 @@ import SMCRead
 import ThermalCore
 
 final class HIDTemperatures {
+    private static let referencePowerManagerChannels: Set<Int> = [1, 2, 4, 5, 6, 7, 8]
+
     private enum Channel: Hashable {
         case batteryGasGauge, nand, powerManager(Int)
 
@@ -28,12 +30,14 @@ final class HIDTemperatures {
     }
 
     private let source: OpaquePointer
+    private let diagnostics: Bool
     private let channels: [(channel: Channel, indices: [Int])]
     private static let range = 5.0...125.0
 
-    init?() {
+    init?(diagnostics: Bool) {
         guard let source = td_hid_temperatures_open() else { return nil }
         self.source = source
+        self.diagnostics = diagnostics
         var byChannel: [Channel: [Int]] = [:]
         var name = [CChar](repeating: 0, count: 64)
         for index in 0..<min(td_hid_temperatures_count(source), 128) {
@@ -43,6 +47,13 @@ final class HIDTemperatures {
                 return String(validatingCString: address)
             }
             guard let product, let channel = Channel(product: product) else { continue }
+            if !diagnostics {
+                switch channel {
+                case .nand: continue
+                case .powerManager(let index) where !Self.referencePowerManagerChannels.contains(index): continue
+                default: break
+                }
+            }
             byChannel[channel, default: []].append(index)
         }
         channels = byChannel.map { (channel: $0.key, indices: $0.value) }
@@ -59,15 +70,21 @@ final class HIDTemperatures {
         }
         var readings: [Temperature] = []
         var powerManagerReadings: [Double] = []
+        var hasPowerManagerChannels = false
         for (channel, indices) in channels {
             // The same named channel can be exposed by several services.
             let value = indices.lazy.map { td_hid_temperature_read(self.source, $0) }
                 .filter { Self.range.contains($0) }.max()
-            let (id, label, group) = channel.identity
-            readings.append(make(id, label, group, value))
-            if case .powerManager = channel, let value { powerManagerReadings.append(value) }
+            if diagnostics || channel == .batteryGasGauge {
+                let (id, label, group) = channel.identity
+                readings.append(make(id, label, group, value))
+            }
+            if case .powerManager(let index) = channel, Self.referencePowerManagerChannels.contains(index) {
+                hasPowerManagerChannels = true
+                if let value { powerManagerReadings.append(value) }
+            }
         }
-        if channels.contains(where: { if case .powerManager = $0.channel { true } else { false } }) {
+        if hasPowerManagerChannels {
             let average = powerManagerReadings.isEmpty ? nil :
                 powerManagerReadings.reduce(0, +) / Double(powerManagerReadings.count)
             readings.append(make("hid-pmu-average", "Power Manager Die Average", .system, average))

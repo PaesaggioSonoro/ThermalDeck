@@ -2,7 +2,7 @@
 
 | Model | Chip | OS tested | Temperatures | Fan RPM | Manual / curves |
 | --- | --- | --- | --- | --- | --- |
-| Mac16,7 | Apple M4 Pro | macOS 26.6.2 (25G83) | 171 named readings found through AppleSMC and HID | Physical read-only probe and live history, stopped and spinning | Max Fans and Auto restoration verified. Curves in Demo |
+| Mac16,7 | Apple M4 Pro | macOS 26.6.2 (25G83) | 26 entries from AppleSMC, HID, and averages | Physical read-only probe and live history, stopped and spinning | Max Fans and Auto restoration verified. Curves in Demo |
 | Other Apple Silicon | Varies | Untested | Discovery planned | Untested | Disabled |
 | Intel | Varies | Untested | Outside current scope | Outside current scope | Disabled |
 
@@ -10,11 +10,13 @@ See [research](research.md) for upstream evidence.
 
 ## Mac16,7 temperature evidence
 
-Unprivileged reads found 171 named readings through AppleSMC and HID. These include ten performance-core names with multiple probes per core, efficiency probes, CPU die and fabric readings, GPU probes and fabric, battery, memory, storage, and system temperatures. HID exposed a battery gas gauge, a NAND channel and 14 power manager die channels. ThermalDeck takes the highest valid reading across duplicate HID services for each named channel and averages the available power manager die channels for the Power Manager Die Average row.
+The Mac16,7 list follows the 26 labels requested from Macs Fan Control's MacBookPro21,4 display. The available CPU Core Average and GPU Cluster Average entries are arithmetic means of the available displayed cores and clusters. The CPU die hotspot continues to contribute to peak monitoring and alerts. [Macs Fan Control release notes](https://crystalidea.com/macs-fan-control/release-notes)
 
-Across 210 read-only samples, the alternate key banks supplied plausible individual performance probe readings at different times. An inactive bank returned small placeholders or exactly 40 °C. ThermalDeck accepts an active value from either bank for each probe, preserves one identity and shows a dash when both are unavailable. `thermal-probe --catalog` scans the full bounded AppleSMC key list for plausible values in supported numeric formats and labels uncertain candidates separately. An example run found 94 unclassified candidates after merging aliases. The mappings are for monitoring and have yet to be qualified as inputs for live fan curves. [iSMC Apple Silicon sensor map](https://github.com/dkorunic/iSMC/blob/master/smc/sensors.go) · [Macs Fan Control release notes](https://crystalidea.com/macs-fan-control/release-notes)
+Across 210 read-only samples, the alternate key banks supplied plausible individual performance probe readings at different times. An inactive bank returned small placeholders or exactly 40 °C. ThermalDeck accepts an active value from either bank and shows a dash when both values are unavailable. `thermal-probe --catalog` lists the additional discovery probes and scans for plausible values in supported numeric formats. These mappings are for monitoring. [iSMC Apple Silicon sensor map](https://github.com/dkorunic/iSMC/blob/master/smc/sensors.go) · [Macs Fan Control release notes](https://crystalidea.com/macs-fan-control/release-notes)
 
-Macs Fan Control 1.5.21 showed four efficiency-core names and five GPU cluster names. Two of the efficiency-core keys in published M4 maps were absent on this Mac. The proposed replacements in a similar machine's report matched the existing cluster die peaks in our sampled data. ThermalDeck keeps their probe labels. The app uses sensor and fabric names for the GPU keys. Matching them to all five reference cluster rows still needs evidence. CrystalIDEA subsequently corrected the reference app's idle, performance-core and GPU-cluster readings. [M4 Pro efficiency key report](https://github.com/exelban/stats/issues/3270) · [Macs Fan Control release notes](https://crystalidea.com/macs-fan-control/release-notes)
+The public MacBookPro21,4 reference map assigns `Te05` to efficiency cores 1 and 2 and `Te0S` to cores 3 and 4. Live readings confirmed that the reference app showed identical values within each pair. GPU Clusters 1–5 map to `Tg05`, `Tg0S`, `Tg0Y`, `Tg0k`, and `Tg0z`. Airport Proximity, Battery, and Power Supply Proximity map to `TW0P`, `TB0T`, and `TPMP`. Live sampled values matched the corresponding reference readings within the apps' sampling and rounding differences. [Public AppleSMC reference map](https://github.com/localhost-copilot/macs-fan-control-re/blob/main/Sources/FanCore/Resources/smcSensors-appleSilicon.xml#L210)
+
+Battery Gas Gauge comes from HID. Power Manager Die Average uses the available HID die channels 1, 2, and 4–8. ThermalDeck uses the highest valid reading across duplicate HID services for each channel. [Public HID reference map](https://github.com/localhost-copilot/macs-fan-control-re/blob/main/Sources/FanCore/Resources/iokitSensors.xml#L33)
 
 ## Mac16,7 fan evidence
 

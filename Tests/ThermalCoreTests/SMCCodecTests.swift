@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ThermalCore
 @testable import HardwareAccess
@@ -32,6 +33,12 @@ import ThermalCore
         #expect(entries[id]?.canPark == true)
     }
     #expect(entries["Te05"]?.label == "CPU Efficiency Core 1")
+    #expect(entries["Te0S"]?.label == "CPU Efficiency Core 3")
+    #expect(entries["Tg0z"]?.label == "GPU Cluster 5")
+    #expect(entries["TPMP"]?.label == "Power Supply Proximity")
+    #expect(entries["TCMz"] == nil)
+    #expect(M4ProTemperatureCatalog.entries(for: machine, diagnostics: true)["TCMz"]?.label == "CPU Die Hotspot")
+    #expect(entries.count == 20)
     #expect(entries["Tp1j"]?.alternate == "Tp01")
     #expect(entries["Tp2E"]?.alternate == "Tp0b")
     #expect(M4ProTemperatureCatalog.Entry.activeValue(40) == nil)
@@ -39,6 +46,32 @@ import ThermalCore
     #expect(M4ProTemperatureCatalog.Entry.activeValue(40.015625) == 40.015625)
     #expect(Set(entries.values.map(\.label)).count == entries.count)
     #expect(M4ProTemperatureCatalog.entries(for: Machine(model: "Mac16,7", chip: "Apple M4 Max", os: "Test")).isEmpty)
+}
+
+@Test func m4ProAveragesUseTheCuratedRowsAndSkipUnavailableReadings() {
+    let now = ContinuousClock.now
+    let date = Date()
+    func sensor(_ key: String, _ group: SensorGroup, _ value: Double?, offset: Duration = .zero) -> Temperature {
+        Temperature(id: SensorID(rawValue: key), group: group,
+                    reading: Reading(value, within: 5...125, at: date, sampledAt: now.advanced(by: offset)),
+                    format: "flt ")
+    }
+    let readings = [
+        sensor("Te05", .cpu, 40), sensor("Te0S", .cpu, 46), sensor("Tp1j", .cpu, 58),
+        sensor("Tp1n", .cpu, nil), sensor("TCMz", .cpu, 100),
+        sensor("Tg05", .gpu, 40), sensor("Tg0S", .gpu, 50),
+        sensor("Tg0Y", .gpu, 80, offset: .seconds(-20)), sensor("TfC0", .gpu, 70)
+    ]
+    let derived = M4ProTemperatureCatalog.derivedTemperatures(from: readings, at: date, started: now, validity: .seconds(5))
+    let values = Dictionary(uniqueKeysWithValues: derived.map { ($0.displayName, $0.reading.freshValue(at: now)) })
+    #expect(values == ["CPU Efficiency Core 2": 40, "CPU Efficiency Core 4": 46,
+                       "CPU Core Average": 46, "GPU Cluster Average": 45])
+
+    let snapshot = Snapshot(machine: Machine(model: "Mac16,7", chip: "Apple M4 Pro", os: "Test"),
+                            temperatures: derived, cpuHotspot: readings[4].reading, health: .live)
+    #expect(snapshot.peak(.cpu, at: now) == 100)
+    #expect(snapshot.highestTemperature(at: now) == 100)
+    #expect(snapshot.peak(.gpu, at: now) == 45)
 }
 
 @Test func fanCountMustFitTheFirmwareKeyIndexAndBeIntegral() {

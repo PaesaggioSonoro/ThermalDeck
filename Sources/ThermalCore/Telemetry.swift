@@ -157,33 +157,40 @@ public struct Snapshot: Sendable {
     public let fans: [Fan]
     public let fanCount: Int?
     public let battery: BatteryTelemetry?
+    public let cpuHotspot: Reading?
     public let health: MonitorHealth
     public let timestamp: Date
     public let simulated: Bool
 
     public init(
         machine: Machine, temperatures: [Temperature] = [], fans: [Fan] = [], fanCount: Int? = nil,
-        battery: BatteryTelemetry? = nil, health: MonitorHealth, timestamp: Date = .now, simulated: Bool = false
+        battery: BatteryTelemetry? = nil, cpuHotspot: Reading? = nil,
+        health: MonitorHealth, timestamp: Date = .now, simulated: Bool = false
     ) {
         self.machine = machine
         self.temperatures = temperatures
         self.fans = fans
         self.fanCount = fanCount
         self.battery = battery
+        self.cpuHotspot = cpuHotspot
         self.health = health
         self.timestamp = timestamp
         self.simulated = simulated
     }
 
     public func peak(_ group: SensorGroup? = nil, at now: ContinuousClock.Instant = .now) -> Double? {
-        temperatures.lazy.filter { sensor in
+        let mapped = temperatures.lazy.filter { sensor in
             if let group { return sensor.group == group }
             return sensor.group == .cpu || sensor.group == .gpu
         }.compactMap { $0.reading.freshValue(at: now) }.max()
+        guard group == nil || group == .cpu, let hotspot = cpuHotspot?.freshValue(at: now) else { return mapped }
+        return max(mapped ?? hotspot, hotspot)
     }
 
     public func highestTemperature(at now: ContinuousClock.Instant = .now) -> Double? {
-        temperatures.lazy.filter { $0.group != .other }.compactMap { $0.reading.freshValue(at: now) }.max()
+        let mapped = temperatures.lazy.filter { $0.group != .other }.compactMap { $0.reading.freshValue(at: now) }.max()
+        guard let hotspot = cpuHotspot?.freshValue(at: now) else { return mapped }
+        return max(mapped ?? hotspot, hotspot)
     }
 }
 

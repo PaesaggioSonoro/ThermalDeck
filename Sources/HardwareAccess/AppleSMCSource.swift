@@ -39,7 +39,7 @@ public actor AppleSMCSource: TelemetrySource {
             os: "macOS \(version.majorVersion).\(version.minorVersion).\(version.patchVersion)" +
                 (build.map { " (\($0))" } ?? "")
         )
-        temperatureCatalog = M4ProTemperatureCatalog.entries(for: machine)
+        temperatureCatalog = M4ProTemperatureCatalog.entries(for: machine, diagnostics: includeUnclassified)
     }
 
     public func reset() {
@@ -72,7 +72,7 @@ public actor AppleSMCSource: TelemetrySource {
 
         if started >= nextDiscovery {
             sensors = discover(connection)
-            if !temperatureCatalog.isEmpty { hidTemperatures = HIDTemperatures() }
+            if !temperatureCatalog.isEmpty { hidTemperatures = HIDTemperatures(diagnostics: includeUnclassified) }
             nextDiscovery = started.advanced(by: .seconds(sensors.isEmpty ? 30 : 300))
             Self.log.info("Discovered \(self.sensors.count, privacy: .public) temperature keys")
         }
@@ -92,7 +92,13 @@ public actor AppleSMCSource: TelemetrySource {
                                          at: date, sampledAt: started, validity: validity),
                         format: sensor.format)
         }
-        let temperatures = smcTemperatures + (hidTemperatures?.sample(at: date, started: started, validity: validity) ?? [])
+        let temperatures = smcTemperatures +
+            M4ProTemperatureCatalog.derivedTemperatures(from: smcTemperatures, at: date, started: started, validity: validity) +
+            (hidTemperatures?.sample(at: date, started: started, validity: validity) ?? [])
+        // Retain the die hotspot for existing CPU peak monitoring and temperature alerts.
+        let cpuHotspot = temperatureCatalog.isEmpty ? nil :
+            Reading(connection.number("TCMz", formats: Self.thermalFormats), within: Self.temperatureRange,
+                    at: date, sampledAt: started, validity: validity)
         let fanCount = connection.number("FNum", formats: Self.integerFormats).flatMap(Self.validFanCount)
         let fans = (0..<(fanCount ?? 0)).map {
             readFan($0, connection: connection, at: date, started: started, validity: validity)
@@ -113,7 +119,7 @@ public actor AppleSMCSource: TelemetrySource {
             health = .live
         }
         return Snapshot(machine: machine, temperatures: temperatures, fans: fans, fanCount: fanCount,
-                        battery: battery, health: health, timestamp: date)
+                        battery: battery, cpuHotspot: cpuHotspot, health: health, timestamp: date)
         #endif
     }
 
