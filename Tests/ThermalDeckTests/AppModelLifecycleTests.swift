@@ -53,6 +53,10 @@ import ThermalCore
     let appTemperature = model.temperature(46.7)
     #expect(model.menuBarValue(.highestTemperature) == appTemperature.replacingOccurrences(of: " ", with: ""))
     #expect(model.menuBarDescription(.highestTemperature) == "Highest temperature · Fixture CPU  " + appTemperature)
+    model.preferences.menuBarTemperatureDecimals = false
+    #expect(model.menuBarValue(.highestTemperature) == "47°C")
+    #expect(model.menuBarDescription(.highestTemperature) == "Highest temperature · Fixture CPU  47 °C")
+    #expect(model.temperature(46.7) == appTemperature)
 }
 
 @MainActor

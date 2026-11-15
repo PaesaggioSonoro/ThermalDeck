@@ -3,6 +3,7 @@ public enum MenuBarReadout: Hashable, Codable, Sendable {
     case highestTemperature
     case cpuHighest
     case gpuHighest
+    case fastestFan
     case fan(FanID)
     // Preserves the existing CPU/GPU peak selection from older preferences.
     case cpuGPUHighest
@@ -14,18 +15,37 @@ public enum MenuBarReadout: Hashable, Codable, Sendable {
         case .highestTemperature: "Highest temperature"
         case .cpuHighest: "CPU highest"
         case .gpuHighest: "GPU highest"
+        case .fastestFan: "Fastest fan"
         case .fan(let id): "\(id.name) speed"
         case .cpuGPUHighest: "CPU/GPU peak"
+        }
+    }
+
+    public var isFanSpeed: Bool {
+        switch self {
+        case .fan, .fastestFan: true
+        default: false
         }
     }
 
     public func value(
         in snapshot: Snapshot, hiding hidden: Set<SensorID> = [], at now: ContinuousClock.Instant = .now
     ) -> Double? {
-        if case .fan(let id) = self {
-            return snapshot.fans.first { $0.id == id }?.speed.freshValue(at: now)
-        }
+        if isFanSpeed { return fanSource(in: snapshot, at: now)?.speed.freshValue(at: now) }
         return temperatureSensor(in: snapshot, hiding: hidden, at: now)?.reading.freshValue(at: now)
+    }
+
+    public func fanSource(in snapshot: Snapshot, at now: ContinuousClock.Instant = .now) -> Fan? {
+        switch self {
+        case .fan(let id):
+            return snapshot.fans.first { $0.id == id }
+        case .fastestFan:
+            return snapshot.fans.lazy
+                .compactMap { fan in fan.speed.freshValue(at: now).map { (fan: fan, rpm: $0) } }
+                .max { $0.rpm < $1.rpm }?.fan
+        default:
+            return nil
+        }
     }
 
     public func temperatureSensor(
@@ -34,7 +54,7 @@ public enum MenuBarReadout: Hashable, Codable, Sendable {
         let groups: Set<SensorGroup>
         switch self {
         case .sensor(let id): return snapshot.temperatures.first { $0.id == id }
-        case .fan: return nil
+        case .fan, .fastestFan: return nil
         case .highestTemperature: groups = Set(SensorGroup.allCases).subtracting([.other])
         case .cpuHighest: groups = [.cpu]
         case .gpuHighest: groups = [.gpu]

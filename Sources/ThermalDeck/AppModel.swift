@@ -158,10 +158,11 @@ final class AppModel {
         temperature(value, unitSeparator: " ")
     }
 
-    private func temperature(_ value: Double?, unitSeparator: String) -> String {
+    private func temperature(_ value: Double?, unitSeparator: String, showDecimals: Bool = true) -> String {
         guard let value else { return "—" }
         let unit = preferences.unit
-        return unit.displayValue(value).formatted(.number.precision(.fractionLength(0...1))) + unitSeparator + unit.symbol
+        let digits = showDecimals ? 0...1 : 0...0
+        return unit.displayValue(value).formatted(.number.precision(.fractionLength(digits))) + unitSeparator + unit.symbol
     }
 
     func rpm(_ value: Double?) -> String {
@@ -224,18 +225,24 @@ final class AppModel {
 
     func menuBarValue(_ readout: MenuBarReadout) -> String {
         let value = readout.value(in: snapshot, hiding: preferences.sensorPresentation.hiddenSensors)
-        if case .fan = readout { return rpm(value) }
-        return temperature(value, unitSeparator: "")
+        if readout.isFanSpeed { return rpm(value) }
+        return temperature(value, unitSeparator: "", showDecimals: preferences.menuBarTemperatureDecimals)
     }
 
     func menuBarDescription(_ readout: MenuBarReadout) -> String {
         let title = readout.label(in: snapshot)
         let now = ContinuousClock.now
-        if case .fan = readout { return title + "  " + rpm(readout.value(in: snapshot, at: now)) }
+        if readout.isFanSpeed {
+            let fan = readout.fanSource(in: snapshot, at: now)
+            var label = title
+            if readout == .fastestFan, let fan { label += " · " + fan.id.name }
+            return label + "  " + rpm(fan?.speed.freshValue(at: now))
+        }
         let sensor = readout.temperatureSensor(in: snapshot, hiding: preferences.sensorPresentation.hiddenSensors, at: now)
         let name = sensor?.displayName ?? title
         let label = title == name ? title : title + " · " + name
-        return label + "  " + temperature(sensor?.reading.freshValue(at: now))
+        return label + "  " + temperature(sensor?.reading.freshValue(at: now), unitSeparator: " ",
+                                         showDecimals: preferences.menuBarTemperatureDecimals)
     }
 
     private func accept(_ sample: Snapshot, expires: ContinuousClock.Instant) {

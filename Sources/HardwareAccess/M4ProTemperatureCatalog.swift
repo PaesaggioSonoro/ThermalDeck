@@ -45,18 +45,18 @@ enum M4ProTemperatureCatalog {
                                        reading: source.reading, format: source.format))
         }
         monitored.append(contentsOf: derived)
-        func average(_ group: SensorGroup, id: String, label: String) -> Temperature? {
+        func average(_ group: SensorGroup, id: SensorID, label: String) -> Temperature? {
             let readings = monitored.filter { $0.group == group }
             guard !readings.isEmpty else { return nil }
             let values = readings.compactMap { $0.reading.freshValue(at: started) }
             let value = values.isEmpty ? nil : values.reduce(0, +) / Double(values.count)
-            return Temperature(id: SensorID(rawValue: id), label: label, group: group,
+            return Temperature(id: id, label: label, group: group,
                                reading: Reading(value, within: 5...125, at: date, sampledAt: started, validity: validity),
                                format: "average")
         }
         derived.append(contentsOf: [
-            average(.cpu, id: "cpu-core-average", label: "CPU Core Average"),
-            average(.gpu, id: "gpu-cluster-average", label: "GPU Cluster Average")
+            average(.cpu, id: .cpuCoreAverage, label: "CPU Core Average"),
+            average(.gpu, id: .gpuClusterAverage, label: "GPU Cluster Average")
         ].compactMap { $0 })
         return derived
     }

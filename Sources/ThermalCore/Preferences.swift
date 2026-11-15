@@ -49,6 +49,7 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var showOverviewChart: Bool?
     private var savedSensorPresentation: SensorPresentation?
     private var savedMenuBar: MenuBarSelection?
+    private var savedMenuBarTemperatureDecimals: Bool?
     public var storedPercentCurve: PercentFanCurve?
     private var savedHistorySensors: [SensorID]?
 
@@ -73,6 +74,11 @@ public struct Preferences: Codable, Equatable, Sendable {
             }
         }
         set { savedMenuBar = newValue }
+    }
+
+    public var menuBarTemperatureDecimals: Bool {
+        get { savedMenuBarTemperatureDecimals ?? true }
+        set { savedMenuBarTemperatureDecimals = newValue }
     }
 
     public var historySensors: [SensorID] { savedHistorySensors ?? [] }

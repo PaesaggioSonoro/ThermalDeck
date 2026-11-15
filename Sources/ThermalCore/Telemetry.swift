@@ -13,6 +13,9 @@ public struct Machine: Equatable, Sendable {
 }
 
 public struct SensorID: RawRepresentable, Hashable, Codable, Sendable {
+    public static let cpuCoreAverage = SensorID(rawValue: "cpu-core-average")
+    public static let gpuClusterAverage = SensorID(rawValue: "gpu-cluster-average")
+
     public let rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
 }
@@ -191,6 +194,20 @@ public struct Snapshot: Sendable {
         let mapped = temperatures.lazy.filter { $0.group != .other }.compactMap { $0.reading.freshValue(at: now) }.max()
         guard let hotspot = cpuHotspot?.freshValue(at: now) else { return mapped }
         return max(mapped ?? hotspot, hotspot)
+    }
+
+    public func zoneAverage(_ group: SensorGroup, at now: ContinuousClock.Instant = .now) -> Double? {
+        let id: SensorID
+        switch group {
+        case .cpu: id = .cpuCoreAverage
+        case .gpu: id = .gpuClusterAverage
+        default: return nil
+        }
+        if let average = temperatures.first(where: { $0.id == id }) {
+            return average.reading.freshValue(at: now)
+        }
+        let values = temperatures.filter { $0.group == group }.compactMap { $0.reading.freshValue(at: now) }
+        return values.isEmpty ? nil : values.reduce(0, +) / Double(values.count)
     }
 }
 

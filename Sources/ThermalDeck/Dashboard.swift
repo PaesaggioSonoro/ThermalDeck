@@ -94,26 +94,14 @@ struct Dashboard: View {
                         .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                 }
             }
-            HStack(spacing: 12) {
-                MetricTile(title: "CPU zone peak", value: model.temperature(model.snapshot.peak(.cpu)), icon: "cpu")
-                MetricTile(title: "GPU zone peak", value: model.temperature(model.snapshot.peak(.gpu)), icon: "display")
-                MetricTile(title: "Mapped peak", value: model.temperature(model.snapshot.peak()), icon: "thermometer.medium")
-            }
             if !model.snapshot.fans.isEmpty {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 12)], spacing: 8) {
-                    ForEach(model.snapshot.fans) { fan in
-                        HStack {
-                            Label(fan.id.name, systemImage: "fan").foregroundStyle(.secondary)
-                            Spacer()
-                            Text(model.rpm(fan.speed.freshValue())).monospacedDigit().fontWeight(.medium)
-                        }
-                        .padding(.horizontal, 12).padding(.vertical, 9)
-                        .background(.quaternary.opacity(0.32), in: RoundedRectangle(cornerRadius: 8))
-                        .accessibilityElement(children: .combine)
-                    }
-                }
+                overviewFans
             }
             cooling
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { overviewTemperatures }
+                VStack(spacing: 12) { overviewTemperatures }
+            }
             if model.preferences.collectHistory && model.preferences.showOverviewChart != false {
                 let end = model.snapshot.timestamp
                 let start = end.addingTimeInterval(-300)
@@ -121,23 +109,58 @@ struct Dashboard: View {
                              points: model.history.plot([.cpu, .gpu], from: start, through: end),
                              range: start...end, temperatureUnit: model.preferences.unit)
             }
-            if let battery = model.snapshot.battery {
-                GroupBox("Battery") {
-                    LabeledContent("Power source", value: battery.source?.rawValue ?? "Unavailable")
-                    if let percent = battery.chargePercent {
-                        LabeledContent("Charge", value: (percent / 100).formatted(.percent.precision(.fractionLength(0))))
-                    }
-                    if let charging = battery.isCharging {
-                        LabeledContent("Charging", value: charging ? "Yes" : "No")
-                    }
-                    if let watts = battery.flowWatts {
-                        LabeledContent("Battery power flow",
-                                       value: watts.formatted(.number.precision(.fractionLength(1)).sign(strategy: .always(includingZero: false))) + " W")
-                            .help("Positive values flow into the battery. Negative values flow out.")
-                    }
+        }
+    }
+
+    private var overviewFans: some View {
+        let fans = model.snapshot.fans
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: min(fans.count, 2))
+        return LazyVGrid(columns: columns, spacing: 12) {
+            ForEach(fans) { fan in
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(fan.id.name, systemImage: "fan")
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    OverviewReading(value: model.rpm(fan.speed.freshValue()), size: 38)
                 }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.quaternary.opacity(0.38), in: RoundedRectangle(cornerRadius: 12))
+                .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary) }
+                .accessibilityElement(children: .combine)
             }
         }
+    }
+
+    @ViewBuilder
+    private var overviewTemperatures: some View {
+        temperatureCard("CPU", icon: "cpu", group: .cpu)
+        temperatureCard("GPU", icon: "display", group: .gpu)
+    }
+
+    private func temperatureCard(_ title: String, icon: String, group: SensorGroup) -> some View {
+        let now = ContinuousClock.now
+        return GroupBox {
+            HStack(spacing: 12) {
+                temperatureMetric("Zone peak", value: model.snapshot.peak(group, at: now))
+                Divider()
+                temperatureMetric("Average", value: model.snapshot.zoneAverage(group, at: now))
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 4)
+        } label: {
+            Label(title, systemImage: icon)
+        }
+        .frame(minWidth: 220, maxWidth: .infinity)
+    }
+
+    private func temperatureMetric(_ title: String, value: Double?) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            OverviewReading(value: model.temperature(value), size: 25)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     private var cooling: some View {
@@ -222,27 +245,16 @@ struct Dashboard: View {
     }
 }
 
-struct MetricTile: View {
-    let title: String
+private struct OverviewReading: View {
     let value: String
-    let icon: String
+    let size: CGFloat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label(title, systemImage: icon)
-                .font(.callout.weight(.medium))
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.system(size: 29, weight: .medium, design: .rounded))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.65)
-                .accessibilityLabel(value == "—" ? "Unavailable" : value)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.38), in: RoundedRectangle(cornerRadius: 12))
-        .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary) }
-        .accessibilityElement(children: .combine)
+        Text(value)
+            .font(.system(size: size, weight: .semibold, design: .rounded))
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.65)
+            .accessibilityLabel(value == "—" ? "Unavailable" : value)
     }
 }

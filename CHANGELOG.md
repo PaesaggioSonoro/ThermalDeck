@@ -27,6 +27,8 @@
 - The two Menu Bar selectors sit side by side.
 - The M4 Pro list shows 26 familiar CPU, GPU, battery and system entries. Additional hardware probes are available through the diagnostic catalog.
 - Automatic menu bar temperatures match the visible Sensors list and show the source sensor in the menu.
+- Both menu bar pickers group readings by General, CPU, GPU, System and Fans. Choose Fastest fan or an individual fan, and switch between rounded and decimal temperatures.
+- Overview gives fan RPM more space and pairs each CPU and GPU zone peak with its average. The power and battery panel was removed from Overview.
 
 ### Known limitations
 

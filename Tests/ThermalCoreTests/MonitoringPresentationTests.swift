@@ -38,6 +38,12 @@ import ThermalCore
     preferences.interval = 0.5
     let restored = try JSONDecoder().decode(Preferences.self, from: JSONEncoder().encode(preferences))
     #expect(restored.menuBar.readouts == [.highestTemperature, secondFan])
+    #expect(restored.menuBarTemperatureDecimals)
+    preferences.menuBarTemperatureDecimals = false
+    preferences.menuBar = MenuBarSelection(first: .fastestFan, second: secondFan)
+    let rounded = try JSONDecoder().decode(Preferences.self, from: JSONEncoder().encode(preferences))
+    #expect(!rounded.menuBarTemperatureDecimals)
+    #expect(rounded.menuBar.readouts == [.fastestFan, secondFan])
     #expect(restored.pollingInterval(dashboardActive: true) == 0.5)
     #expect(restored.pollingInterval(dashboardActive: false) == 1)
     #expect(MenuBarSelection(first: .cpuHighest, second: .cpuHighest).readouts == [.cpuHighest])
@@ -50,6 +56,24 @@ import ThermalCore
                             temperatures: sensors, health: .live)
     #expect(MenuBarReadout.highestTemperature.value(in: snapshot, at: now) == 50)
     #expect(MenuBarReadout.highestTemperature.value(in: snapshot, at: now.advanced(by: .seconds(30))) == nil)
+}
+
+@Test func fastestMenuBarFanUsesFreshMeasuredSpeedAndAcceptsStoppedFans() {
+    let now = ContinuousClock.now
+    func fan(_ index: Int, rpm: Double, age: Duration = .zero, validity: Duration = .seconds(10)) -> Fan {
+        Fan(id: FanID(rawValue: index),
+            speed: Reading(rpm, within: 0...10_000, at: .now, sampledAt: now - age, validity: validity),
+            minimum: nil, maximum: nil, target: 6_000, mode: .system)
+    }
+    let stopped = fan(0, rpm: 0, validity: .seconds(15))
+    let running = fan(1, rpm: 1_234)
+    let stale = fan(2, rpm: 5_000, age: .seconds(30))
+    let snapshot = Snapshot(machine: Machine(model: "Test", chip: "Test", os: "Test"),
+                            fans: [stopped, running, stale], health: .live)
+    #expect(MenuBarReadout.fastestFan.fanSource(in: snapshot, at: now)?.id == running.id)
+    #expect(MenuBarReadout.fastestFan.value(in: snapshot, at: now) == 1_234)
+    #expect(MenuBarReadout.fastestFan.value(in: snapshot, at: now.advanced(by: .seconds(10))) == 0)
+    #expect(MenuBarReadout.fastestFan.value(in: snapshot, at: now.advanced(by: .seconds(20))) == nil)
 }
 
 @Test func automaticMenuReadoutsUseVisibleTemperaturesInsteadOfTheAlertHotspot() {

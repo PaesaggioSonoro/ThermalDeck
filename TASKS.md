@@ -22,3 +22,4 @@
 | TD-17 | Discover and name more M4 Pro temperatures | AppleSMC and HID verified on Mac16,7. Additional probes are available in the diagnostic catalog. |
 | TD-18 | Match the M4 Pro Sensors list to Macs Fan Control labels | 26 requested entries, with four efficiency-core labels sharing two sensor readings. |
 | TD-19 | Match automatic menu bar temperatures to Sensors | Uses visible readings and the same precision. The dropdown identifies the source. |
+| TD-20 | Group menu bar choices and revise Overview | Both slots support grouped sensor and fan readings. Overview prioritizes RPM and compares CPU and GPU peaks and averages. |

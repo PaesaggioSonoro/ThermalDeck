@@ -72,6 +72,8 @@ import ThermalCore
     #expect(snapshot.peak(.cpu, at: now) == 100)
     #expect(snapshot.highestTemperature(at: now) == 100)
     #expect(snapshot.peak(.gpu, at: now) == 45)
+    #expect(snapshot.zoneAverage(.cpu, at: now) == 46)
+    #expect(snapshot.zoneAverage(.gpu, at: now) == 45)
 }
 
 @Test func fanCountMustFitTheFirmwareKeyIndexAndBeIntegral() {
