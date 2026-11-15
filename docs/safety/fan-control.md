@@ -39,7 +39,7 @@ The simulator can apply one percentage curve to exactly two fans, converting eac
 
 ## Live helper
 
-The local installer puts the helper and its identity file under `/Library/PrivilegedHelperTools` and registers it as a system launch daemon. Both endpoints authenticate the peer's identifier and exact code signature hash over XPC. The identity file is owned by root and ties authorization to one app and helper build. Reinstall after a rebuild changes the app's hash. Distribution builds use [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice) with matching signing teams.
+From Overview, **Install Fan Helper** opens a local package in macOS Installer. The app verifies that the packaged copy matches the running app's code signature. After administrator approval, Installer runs the same installer script used from Terminal. It puts the helper and its identity file under `/Library/PrivilegedHelperTools` and registers a system launch daemon. Both endpoints authenticate the peer's identifier and exact code signature hash over XPC. The root-owned identity file ties authorization to one app and helper build. Use **Update Fan Helper** after a rebuild changes the app's hash. Distribution builds use [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice) with matching signing teams.
 
 The daemon also checks the current console user and associates an override with one connection. Its interface accepts status, maximum and automatic. It derives the two RPM values from hardware and accepts neither keys nor RPM values from the app.
 

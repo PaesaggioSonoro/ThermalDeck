@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>ThermalDeck Fan Helper</title>
+    <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
+    <options customize="never"/>
+    <choices-outline>
+        <line choice="fan-helper"/>
+    </choices-outline>
+    <choice id="fan-helper" title="ThermalDeck Fan Helper" description="Enables Max Fans in ThermalDeck.">
+        <pkg-ref id="org.thermaldeck.local.fan-control.installer"/>
+    </choice>
+    <pkg-ref id="org.thermaldeck.local.fan-control.installer" auth="Root">fan-helper.pkg</pkg-ref>
+</installer-gui-script>

@@ -13,6 +13,8 @@ The shell wrappers use the selected developer tools. On the locally tested CLT 2
 
 To use Xcode, open the project and build the shared ThermalDeck scheme. The library modules resolve from the local Swift package. The GUI project was plist-validated locally. Full Xcode validation requires an Xcode installation.
 
-The bundle script accepts CONFIGURATION, DISPLAY_NAME, BUNDLE_IDENTIFIER, and OUTPUT_DIR. It builds and packages the fan helper with an ad hoc signature. For a local build with the default identifier, `/bin/bash Scripts/install-local-fan-helper.sh check dist/ThermalDeck.app` validates the bundle and prepares the service configuration in a temporary directory without installing it. See the [README](../../README.md) for the administrator install and removal commands. The shared Xcode scheme builds the dashboard for development. Use the bundle script to package the helper. Never run the app or read-only probe as root.
+The bundle script accepts CONFIGURATION, DISPLAY_NAME, BUNDLE_IDENTIFIER, and OUTPUT_DIR. It builds and packages the fan helper with an ad hoc signature. Open a packaged local build with the default identifier and use **Install Fan Helper** or **Update Fan Helper** in Overview. The app builds a package from its current signed bundle and opens macOS Installer for administrator approval. The shared Xcode scheme builds the dashboard for development. Use the bundle script to package the helper.
+
+For Terminal setup, quit the app and run `sudo /bin/bash Scripts/install-local-fan-helper.sh install dist/ThermalDeck.app`. Use `/bin/bash Scripts/install-local-fan-helper.sh check dist/ThermalDeck.app` to validate the bundle and generate a temporary service configuration. See the [README](../../README.md) for removal.
 
 See [compatibility](../hardware/compatibility.md) and [fan safety](../safety/fan-control.md) before recording hardware claims.

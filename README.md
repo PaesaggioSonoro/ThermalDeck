@@ -16,7 +16,7 @@ Scripts/build-app.sh
 open dist/ThermalDeck.app
 ```
 
-Set `CONFIGURATION=release` for an optimized local build. The build script packages and ad-hoc signs the app. An Xcode project and shared scheme are included for IDE use. No installer or public release is available. [Development setup](docs/development/setup.md)
+Set `CONFIGURATION=release` for an optimized local build. The build script packages and ad-hoc signs the app. An Xcode project and shared scheme are included for IDE use. [Development setup](docs/development/setup.md)
 
 Open Sensors to sort readings, group by zone, or hide individual rows. Open Fans for measured RPM, reported target, bounds, and mode. Use History to choose a range, show additional series, or export samples. The sidebar Menu Bar page configures up to two live values. The gear beside the Mac model opens Settings for units, appearance, polling, retention, and local alerts. To see explicitly labeled simulated telemetry, run `open -n dist/ThermalDeck.app --args --demo`. [Monitoring guide](docs/user/monitoring.md)
 
@@ -24,14 +24,9 @@ Open Sensors to sort readings, group by zone, or hide individual rows. Open Fans
 
 Automatic leaves cooling under macOS control. Max Fans uses a separate root helper. Both fans reached their rated speed on Mac16,7 with M4 Pro on macOS 26.6.2 build 25G83. Restore Automatic and normal Quit both returned cooling to macOS. The local build uses an ad hoc signature and does not require an Apple Developer membership. [Fan control](docs/safety/fan-control.md)
 
-Quit ThermalDeck, then run these commands from the repository to build the app and install the matching helper:
+Open the local build and click **Install Fan Helper** in Overview. Complete the setup in macOS Installer and authorize it as an administrator. Return to ThermalDeck to use **Max Fans**. If a rebuild changes the app's signature, click **Update Fan Helper** in Overview and repeat the approval. [Development setup](docs/development/setup.md)
 
-```sh
-CONFIGURATION=release Scripts/build-app.sh
-sudo /bin/bash Scripts/install-local-fan-helper.sh install dist/ThermalDeck.app
-```
-
-Reopen ThermalDeck and use **Max Fans** in Overview. Repeat the install command after a build changes the app's signature. To remove the helper, restore Automatic, quit the app, and run `sudo /bin/bash Scripts/install-local-fan-helper.sh remove`. Demo mode is available with `open -n dist/ThermalDeck.app --args --demo`.
+To remove the helper, restore Automatic, quit the app, and run `sudo /bin/bash Scripts/install-local-fan-helper.sh remove`. Demo mode is available with `open -n dist/ThermalDeck.app --args --demo`.
 
 ThermalDeck is provided as is under the MIT license. Undocumented monitoring interfaces can vary by hardware and OS version. Manual fan control can alter normal cooling and may contribute to higher temperatures, instability, shortened component life, hardware damage or data loss. Use this software at your own risk. ThermalDeck has no affiliation with Apple.
 

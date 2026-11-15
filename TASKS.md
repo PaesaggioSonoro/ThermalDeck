@@ -23,3 +23,4 @@
 | TD-18 | Match the M4 Pro Sensors list to Macs Fan Control labels | 26 requested entries, with four efficiency-core labels sharing two sensor readings. |
 | TD-19 | Match automatic menu bar temperatures to Sensors | Uses visible readings and the same precision. The dropdown identifies the source. |
 | TD-20 | Group menu bar choices and revise Overview | Both slots support grouped sensor and fan readings. Overview prioritizes RPM and compares CPU and GPU peaks and averages. |
+| TD-21 | Install the local fan helper from Overview | Package verified and native Installer review tested. Administrator installation through this flow remains to be verified. |

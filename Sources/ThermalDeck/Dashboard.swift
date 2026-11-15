@@ -186,9 +186,9 @@ struct Dashboard: View {
                 if let live, let message = live.availability.message {
                     HStack {
                         Text(message).font(.caption).foregroundStyle(.secondary)
-                        if live.availability == .needsSetup || live.availability == .needsApproval {
-                            Button(live.availability == .needsApproval ? "Open System Settings" : "Set Up Fan Control",
-                                   action: live.setUp)
+                        if let setupTitle = live.availability.setupTitle {
+                            Button(live.preparingInstaller ? "Preparing Installer…" : setupTitle, action: live.setUp)
+                                .disabled(live.preparingInstaller || live.needsRestoration)
                         }
                     }
                 }

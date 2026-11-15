@@ -32,6 +32,12 @@ plutil -replace Label -string "$service_label" "$service_plist"
 plutil -replace AssociatedBundleIdentifiers.0 -string "$bundle_id" "$service_plist"
 plutil -replace MachServices -json "{\"$service_label\":true}" "$service_plist"
 cp "$bin_dir/thermal-fan-helper" "$bundle/Contents/MacOS/"
+if [[ "$bundle_id" == org.thermaldeck.local ]]; then
+    installer_resources="$bundle/Contents/Resources/FanHelperInstaller"
+    mkdir -p "$installer_resources"
+    cp App/FanHelperInstaller/Distribution.xml App/FanHelperInstaller/postinstall \
+        Scripts/install-local-fan-helper.sh "$installer_resources/"
+fi
 codesign --force --options runtime --sign - --identifier "$service_label" "$bundle/Contents/MacOS/thermal-fan-helper" >&2
 codesign --force --options runtime --sign - "$bundle" >&2
 codesign --verify --deep --strict "$bundle"

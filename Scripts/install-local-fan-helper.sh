@@ -37,6 +37,10 @@ trusted_directory() {
 if [[ "$1" != check ]]; then
     trusted_directory /Library && trusted_directory "$daemon_dir" ||
         { printf '%s\n' 'The system service directory is not owned and protected by root.' >&2; exit 78; }
+    # Installer and Terminal share this lock for the daemon replacement transaction.
+    exec 9>>"$daemon_dir/.$label.lock"
+    lockf -t 0 9 ||
+        { printf '%s\n' 'Another ThermalDeck fan helper operation is in progress. Try again when it finishes.' >&2; exit 75; }
     if [[ ! -e "$helper_dir" && ! -L "$helper_dir" && "$1" == install ]]; then
         install -d -o root -g wheel -m 755 "$helper_dir"
     fi

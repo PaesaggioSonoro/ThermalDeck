@@ -1,6 +1,8 @@
+import AppKit
 import Foundation
 import HardwareAccess
 import Observation
+import OSLog
 import ServiceManagement
 import ThermalCore
 
@@ -21,6 +23,16 @@ final class LiveCooling {
             case .ready: nil
             }
         }
+
+        var setupTitle: String? {
+            switch self {
+            case .needsLocalInstall: "Install Fan Helper…"
+            case .needsLocalUpdate: "Update Fan Helper…"
+            case .needsSetup: "Set Up Fan Control"
+            case .needsApproval: "Open System Settings"
+            default: nil
+            }
+        }
     }
 
     private enum Command { case status, maximum, automatic }
@@ -39,13 +51,16 @@ final class LiveCooling {
     @ObservationIgnored private var restoration: Task<Bool, Never>?
     @ObservationIgnored private var revision = 0
     @ObservationIgnored private var lastCheck: ContinuousClock.Instant?
+    @ObservationIgnored private var localInstallerPackage: URL?
     @ObservationIgnored var reportIssue: ((MonitorAlert?) -> Void)?
+    private static let installerLog = Logger(subsystem: "org.thermaldeck.local", category: "fan-helper-installer")
 
     private(set) var availability: Availability
     private(set) var state: FanControlResult = .unavailable
     private(set) var changing = false
     private(set) var needsRestoration = false
     private(set) var notice: String?
+    private(set) var preparingInstaller = false
 
     init(machine: Machine) {
         self.machine = machine
@@ -106,7 +121,9 @@ final class LiveCooling {
 
     func setUp() {
         refreshAvailability()
-        if availability == .needsApproval {
+        if availability == .needsLocalInstall || availability == .needsLocalUpdate {
+            openLocalInstaller()
+        } else if availability == .needsApproval {
             SMAppService.openSystemSettingsLoginItems()
         } else if availability == .needsSetup {
             do {
@@ -116,6 +133,36 @@ final class LiveCooling {
                 notice = "Could not register the fan control helper."
             }
             refreshAvailability()
+        }
+    }
+
+    private func openLocalInstaller() {
+        guard !preparingInstaller, let signing,
+              let requirement = FanControlServiceIdentity.exactRequirement(identifier: identifier, cdHash: signing.cdHash)
+        else { return }
+
+        preparingInstaller = true
+        notice = nil
+        let app = Bundle.main.bundleURL
+        Task {
+            defer { preparingInstaller = false }
+            do {
+                let package: URL
+                if let cached = localInstallerPackage, FileManager.default.fileExists(atPath: cached.path) {
+                    package = cached
+                } else {
+                    package = try await Task.detached(priority: .userInitiated) {
+                        try LocalFanInstaller.prepare(app: app, requirement: requirement)
+                    }.value
+                    localInstallerPackage = package
+                }
+                let installer = URL(filePath: "/System/Library/CoreServices/Installer.app")
+                _ = try await NSWorkspace.shared.open([package], withApplicationAt: installer,
+                                                      configuration: NSWorkspace.OpenConfiguration())
+            } catch {
+                Self.installerLog.error("Could not open local fan helper installer: \(error.localizedDescription, privacy: .private)")
+                notice = "Could not open the fan helper installer. Try again."
+            }
         }
     }
 

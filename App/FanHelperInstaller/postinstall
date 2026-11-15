@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euo pipefail
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+
+if [[ "$EUID" != 0 || "${3:-}" != / ]]; then
+    printf '%s\n' 'Install the ThermalDeck fan helper on the startup disk as an administrator.' >&2
+    exit 77
+fi
+
+app="$(dirname "$0")/ThermalDeck.app"
+codesign --verify --deep --strict -R '=identifier "org.thermaldeck.local"' "$app"
+exec /bin/bash "$app/Contents/Resources/FanHelperInstaller/install-local-fan-helper.sh" install "$app"
